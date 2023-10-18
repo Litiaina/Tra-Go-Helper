@@ -7,6 +7,8 @@ import androidx.core.view.WindowCompat
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityMainBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
+import com.teamlitiaina.tragohelper.fragment.FragmentChanger
+import com.teamlitiaina.tragohelper.fragment.MapFragment
 
 class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallback {
 
@@ -24,9 +26,10 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         }
 
         FirebaseObject.retrieveData("vehicle_owner_user", this)
-
+        FragmentChanger.replaceFragment(this@MainActivity, MapFragment(), binding.dashboardLayout.id)
     }
     override fun onDataReceived(data: UserData) {
         binding.currentUserNameTextView.text = "Hi, ${data.name}" ?: "null"
     }
+
 }

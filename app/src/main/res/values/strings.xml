@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Tra Go Helper</string>
+    <string name="MAPS_API_KEY">AIzaSyBNKZo96e8T4FpfovK5yD1hWkePYE7XT0o</string>
 </resources>
