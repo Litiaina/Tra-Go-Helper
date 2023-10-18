@@ -5,7 +5,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
 import androidx.core.view.WindowCompat
-import com.teamlitiaina.tragohelper.data.VehicleOwnerUserData
+import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityRegisterBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 import com.teamlitiaina.tragohelper.validation.Validation
@@ -44,7 +44,7 @@ class RegisterActivity : AppCompatActivity() {
                     secondMessage = "Password must at least 6 digits")) {
                 FirebaseObject.auth.createUserWithEmailAndPassword(binding.emailEditText.text.toString(), binding.passwordEditText.text.toString()).addOnSuccessListener {
                     FirebaseObject.database.getReference("vehicle_owner_user").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
-                        VehicleOwnerUserData(binding.nameEditText.text.toString(),binding.emailEditText.text.toString())
+                        UserData(binding.nameEditText.text.toString(),binding.emailEditText.text.toString())
                     ).addOnSuccessListener {
                         Toast.makeText(this@RegisterActivity, "Register Success", Toast.LENGTH_SHORT).show()
                         startActivity(Intent(this@RegisterActivity, MainActivity::class.java))

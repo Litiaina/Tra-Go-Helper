@@ -4,7 +4,7 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.core.view.WindowCompat
-import com.teamlitiaina.tragohelper.data.VehicleOwnerUserData
+import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityMainBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 
@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         FirebaseObject.retrieveData("vehicle_owner_user", this)
 
     }
-    override fun onDataReceived(data: VehicleOwnerUserData) {
+    override fun onDataReceived(data: UserData) {
         binding.currentUserNameTextView.text = "Hi, ${data.name}" ?: "null"
     }
 }
