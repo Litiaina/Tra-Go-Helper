@@ -4,17 +4,18 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.core.view.WindowCompat
+import com.teamlitiaina.tragohelper.data.VehicleOwnerUserData
 import com.teamlitiaina.tragohelper.databinding.ActivityMainBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallback {
 
     private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityMainBinding.inflate(layoutInflater)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(binding.root)
 
         if (FirebaseObject.auth.uid == null) {
@@ -22,10 +23,10 @@ class MainActivity : AppCompatActivity() {
             finish()
         }
 
-        binding.signOutButton.setOnClickListener {
-            FirebaseObject.auth.signOut()
-            startActivity(Intent(this@MainActivity, LoginActivity::class.java))
-            finish()
-        }
+        FirebaseObject.retrieveData("vehicle_owner_user", this)
+
+    }
+    override fun onDataReceived(data: VehicleOwnerUserData) {
+        binding.currentUserNameTextView.text = "Hi, ${data.name}" ?: "null"
     }
 }
