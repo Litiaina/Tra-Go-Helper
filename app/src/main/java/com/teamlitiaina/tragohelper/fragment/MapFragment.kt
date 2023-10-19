@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.SearchView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.android.volley.Request
 import com.android.volley.RequestQueue
@@ -47,6 +48,7 @@ class MapFragment : Fragment(), OnMapReadyCallback{
     private var polyline: Polyline? = null
     private var destinationLatitude: Double = 0.0
     private var destinationLongitude: Double = 0.0
+    private val locationPermissionRequestCode = 100
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -59,6 +61,7 @@ class MapFragment : Fragment(), OnMapReadyCallback{
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        requestLocationPermission()
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireContext())
         queue = Volley.newRequestQueue(requireContext())
         createLocationRequest()
@@ -162,6 +165,43 @@ class MapFragment : Fragment(), OnMapReadyCallback{
             updateDirections(origin, destination)
         }
     }
+    private fun requestLocationPermission() {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(
+                    requireActivity(),
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            ) {
+                // Explain why you need the permission
+            } else {
+                requestPermissions(
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                    locationPermissionRequestCode
+                )
+            }
+        }
+    }
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        when (requestCode) {
+            locationPermissionRequestCode -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // Permission granted, handle the location access
+                } else {
+                    // Permission denied, handle the failure
+                }
+                return
+            }
+        }
+    }
+
 
     private fun getLastLocation() {
         if (ActivityCompat.checkSelfPermission(
