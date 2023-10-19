@@ -185,6 +185,7 @@ class MapFragment : Fragment(), OnMapReadyCallback{
             }
         }
     }
+    @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -193,9 +194,11 @@ class MapFragment : Fragment(), OnMapReadyCallback{
         when (requestCode) {
             locationPermissionRequestCode -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // Permission granted, handle the location access
+                    createLocationRequest()
+                    initializeLocationCallback()
+                    getLastLocation()
                 } else {
-                    // Permission denied, handle the failure
+                    requireActivity().finish()
                 }
                 return
             }
