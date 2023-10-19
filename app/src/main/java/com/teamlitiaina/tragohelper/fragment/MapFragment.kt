@@ -27,6 +27,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.gms.tasks.Task
 import com.google.maps.android.PolyUtil
@@ -43,6 +44,9 @@ class MapFragment : Fragment(), OnMapReadyCallback{
     private lateinit var locationRequest: LocationRequest
     private lateinit var binding: FragmentMapBinding
     private lateinit var queue: RequestQueue
+    private var polyline: Polyline? = null
+    private var destinationLatitude: Double = 0.0
+    private var destinationLongitude: Double = 0.0
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -68,7 +72,6 @@ class MapFragment : Fragment(), OnMapReadyCallback{
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                // Handle text changes if necessary
                 return false
             }
         })
@@ -84,7 +87,7 @@ class MapFragment : Fragment(), OnMapReadyCallback{
 
     private fun getDirections(address: String) {
         val geocodeUrl =
-            "https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=AIzaSyBNKZo96e8T4FpfovK5yD1hWkePYE7XT0o"
+            "https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=${getString(R.string.MAPS_API_KEY)}"
 
         val geocodeRequest = JsonObjectRequest(
             Request.Method.GET, geocodeUrl, null,
@@ -93,43 +96,8 @@ class MapFragment : Fragment(), OnMapReadyCallback{
                 if (results.length() > 0) {
                     val result = results.getJSONObject(0)
                     val location = result.getJSONObject("geometry").getJSONObject("location")
-                    val latitude = location.getDouble("lat")
-                    val longitude = location.getDouble("lng")
-
-                    val origin = "${currentLocation?.latitude},${currentLocation?.longitude}"
-                    val destination = "$latitude,$longitude"
-
-                    val directionsUrl =
-                        "https://maps.googleapis.com/maps/api/directions/json?" +
-                                "origin=$origin&destination=$destination&key=AIzaSyBNKZo96e8T4FpfovK5yD1hWkePYE7XT0o"
-
-                    val queue = Volley.newRequestQueue(requireContext())
-                    val directionsRequest = JsonObjectRequest(
-                        Request.Method.GET, directionsUrl, null,
-                        { response ->
-                            val routes = response.getJSONArray("routes")
-                            if (routes.length() > 0) {
-                                val points = ArrayList<LatLng>()
-                                val legs = routes.getJSONObject(0).getJSONArray("legs")
-                                val steps = legs.getJSONObject(0).getJSONArray("steps")
-                                for (i in 0 until steps.length()) {
-                                    val step = steps.getJSONObject(i)
-                                    val pointsString = step.getJSONObject("polyline").getString("points")
-                                    points.addAll(PolyUtil.decode(pointsString))
-                                }
-                                val options = PolylineOptions().addAll(points).color(Color.BLUE).width(10f)
-                                mMap?.clear()
-                                mMap?.addPolyline(options)
-
-                                // Add marker to the destination location
-                                val destinationLatLng = LatLng(latitude, longitude)
-                                mMap?.addMarker(MarkerOptions().position(destinationLatLng).title("Destination"))
-                            }
-                        },
-                        { error ->
-                            Toast.makeText(requireContext(), "$error", Toast.LENGTH_SHORT).show()
-                        })
-                    queue.add(directionsRequest)
+                    destinationLatitude = location.getDouble("lat")
+                    destinationLongitude = location.getDouble("lng")
                 }
             },
             { error ->
@@ -139,43 +107,40 @@ class MapFragment : Fragment(), OnMapReadyCallback{
         Volley.newRequestQueue(requireContext()).add(geocodeRequest)
     }
 
+    private fun updateDirections(origin: String, destination: String) {
+        val directionsUrl =
+            "https://maps.googleapis.com/maps/api/directions/json?" +
+                    "origin=$origin&destination=$destination&key=${getString(R.string.MAPS_API_KEY)}"
 
-//    private fun getDirections() {
-//        val latitude = 10.3385
-//        val longitude = 123.9119
-//        val origin = "${currentLocation?.latitude},${currentLocation?.longitude}"
-//        val destination = "$latitude,$longitude" // Replace with the desired destination latitude and longitude
-//
-//        val url = "https://maps.googleapis.com/maps/api/directions/json?" +
-//                "origin=$origin&destination=$destination" +
-//                "&key=AIzaSyBNKZo96e8T4FpfovK5yD1hWkePYE7XT0o"
-//
-//        val queue = Volley.newRequestQueue(requireContext())
-//        val request = JsonObjectRequest(
-//            Request.Method.GET, url, null,
-//            { response ->
-//                val routes = response.getJSONArray("routes")
-//                if (routes.length() > 0) {
-//                    val points = ArrayList<LatLng>()
-//                    val legs = routes.getJSONObject(0).getJSONArray("legs")
-//                    val steps = legs.getJSONObject(0).getJSONArray("steps")
-//                    for (i in 0 until steps.length()) {
-//                        val step = steps.getJSONObject(i)
-//                        val pointsString = step.getJSONObject("polyline").getString("points")
-//                        points.addAll(PolyUtil.decode(pointsString))
-//                    }
-//                    val options = PolylineOptions().addAll(points).color(Color.BLUE).width(5f)
-//                    mMap?.addPolyline(options)
-//
-//                    val destinationLatLng = LatLng(latitude, longitude)
-//                    mMap?.addMarker(MarkerOptions().position(destinationLatLng).title("Destination"))
-//                }
-//            },
-//            { error ->
-//                Toast.makeText(requireContext(), "$error", Toast.LENGTH_SHORT).show()
-//            })
-//        queue.add(request)
-//    }
+        val queue = Volley.newRequestQueue(requireContext())
+        val directionsRequest = JsonObjectRequest(
+            Request.Method.GET, directionsUrl, null,
+            { response ->
+                val routes = response.getJSONArray("routes")
+                if (routes.length() > 0) {
+                    val points = ArrayList<LatLng>()
+                    val legs = routes.getJSONObject(0).getJSONArray("legs")
+                    val steps = legs.getJSONObject(0).getJSONArray("steps")
+                    for (i in 0 until steps.length()) {
+                        val step = steps.getJSONObject(i)
+                        val pointsString = step.getJSONObject("polyline").getString("points")
+                        points.addAll(PolyUtil.decode(pointsString))
+                    }
+                    polyline?.remove()
+                    polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.BLUE).width(10f))
+                    mMap?.clear()
+                    val destinationLatLng = LatLng(destinationLatitude, destinationLongitude)
+                    mMap?.addMarker(MarkerOptions().position(destinationLatLng).title("Destination"))
+                    if (points.isNotEmpty()) {
+                        polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.BLUE).width(10f))
+                    }
+                }
+            },
+            { error ->
+                Toast.makeText(requireContext(), "$error", Toast.LENGTH_SHORT).show()
+            })
+        queue.add(directionsRequest)
+    }
 
     private fun initializeLocationCallback() {
         locationCallback = object : LocationCallback() {
@@ -191,7 +156,10 @@ class MapFragment : Fragment(), OnMapReadyCallback{
     private fun updateMapLocation() {
         currentLocation?.let {
             val latLng = LatLng(it.latitude, it.longitude)
-            mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16.5f))
+            mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18f))
+            val origin = "${it.latitude},${it.longitude}"
+            val destination = "$destinationLatitude,$destinationLongitude"
+            updateDirections(origin, destination)
         }
     }
 
@@ -247,8 +215,9 @@ class MapFragment : Fragment(), OnMapReadyCallback{
         mMap?.isMyLocationEnabled = true
         currentLocation?.let {
             val latLng = LatLng(it.latitude, it.longitude)
-            mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 16.5f))
+            mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18f))
         }
         startLocationUpdates()
     }
+
 }

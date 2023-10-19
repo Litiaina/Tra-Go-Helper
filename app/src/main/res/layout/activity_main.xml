@@ -10,7 +10,7 @@
         android:id="@+id/top_constraint_layout"
         android:layout_width="match_parent"
         android:layout_height="120dp"
-        android:background="@color/white"
+        android:background="@color/black"
         android:elevation="20dp">
 
         <TextView
@@ -18,7 +18,7 @@
             android:layout_width="300dp"
             android:layout_height="wrap_content"
             android:text="Loading..."
-            android:textColor="@color/black"
+            android:textColor="@color/white"
             android:textSize="20sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -32,7 +32,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Welcome to Tra-Go Helper"
-            android:textColor="@color/black"
+            android:textColor="@color/white"
             android:textSize="12sp"
             app:layout_constraintEnd_toEndOf="@+id/current_user_name_text_view"
             app:layout_constraintHorizontal_bias="0.0"
