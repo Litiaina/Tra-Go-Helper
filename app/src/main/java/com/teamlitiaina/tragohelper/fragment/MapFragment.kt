@@ -83,8 +83,8 @@ class MapFragment : Fragment(), OnMapReadyCallback{
     private fun createLocationRequest() {
         locationRequest = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            interval = 5000
-            fastestInterval = 2000
+            interval = 1000 //original 5000
+            fastestInterval = 1000 //original 2000
         }
     }
 
