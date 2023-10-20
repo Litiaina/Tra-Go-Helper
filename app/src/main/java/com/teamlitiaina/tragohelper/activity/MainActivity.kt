@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
             finish()
         }
 
-        FirebaseObject.retrieveData("vehicle_owner_user", this)
+        FirebaseObject.retrieveData("vehicleOwner", this)
         FragmentChanger.replaceFragment(this@MainActivity, MapFragment(), binding.dashboardLayout.id)
     }
     override fun onDataReceived(data: UserData) {

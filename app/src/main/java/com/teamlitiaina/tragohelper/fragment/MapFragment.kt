@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Location
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -104,7 +105,7 @@ class MapFragment : Fragment(), OnMapReadyCallback{
                 }
             },
             { error ->
-                Toast.makeText(requireContext(), "$error", Toast.LENGTH_SHORT).show()
+                Log.e("Geocode API", "Error: ${error.message}")
             })
 
         Volley.newRequestQueue(requireContext()).add(geocodeRequest)
@@ -140,7 +141,7 @@ class MapFragment : Fragment(), OnMapReadyCallback{
                 }
             },
             { error ->
-                Toast.makeText(requireContext(), "$error", Toast.LENGTH_SHORT).show()
+                Log.e("Directions API", "Error: ${error.message}")
             })
         queue.add(directionsRequest)
     }

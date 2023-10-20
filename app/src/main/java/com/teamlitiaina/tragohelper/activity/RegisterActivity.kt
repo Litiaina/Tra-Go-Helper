@@ -30,7 +30,8 @@ class RegisterActivity : AppCompatActivity() {
                     this@RegisterActivity, binding.nameEditText.text.toString(),
                     binding.emailEditText.text.toString(),
                     binding.passwordEditText.text.toString(),
-                    binding.confirmPasswordEditText.text.toString() ,
+                    binding.confirmPasswordEditText.text.toString(),
+                    binding.phoneNumberEditText.text.toString(),
                     message = "All fields are required") &&
                 !Validation.emailNotValid(
                     this@RegisterActivity,
@@ -41,10 +42,14 @@ class RegisterActivity : AppCompatActivity() {
                     binding.passwordEditText.text.toString(),
                     binding.confirmPasswordEditText.text.toString(),
                     firstMessage = "Password doesn't match" ,
-                    secondMessage = "Password must at least 6 digits")) {
+                    secondMessage = "Password must at least 6 digits") &&
+                !Validation.phoneNumberNotValid(
+                    this@RegisterActivity,
+                    binding.phoneNumberEditText.text.toString(),
+                    "Phone number not valid") ) {
                 FirebaseObject.auth.createUserWithEmailAndPassword(binding.emailEditText.text.toString(), binding.passwordEditText.text.toString()).addOnSuccessListener {
-                    FirebaseObject.database.getReference("vehicle_owner_user").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
-                        UserData(binding.nameEditText.text.toString(),binding.emailEditText.text.toString())
+                    FirebaseObject.database.getReference("vehicleOwner").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
+                        UserData(FirebaseObject.auth.currentUser?.uid.toString(),binding.nameEditText.text.toString(),binding.emailEditText.text.toString(),binding.phoneNumberEditText.text.toString(),"")
                     ).addOnSuccessListener {
                         Toast.makeText(this@RegisterActivity, "Register Success", Toast.LENGTH_SHORT).show()
                         startActivity(Intent(this@RegisterActivity, MainActivity::class.java))

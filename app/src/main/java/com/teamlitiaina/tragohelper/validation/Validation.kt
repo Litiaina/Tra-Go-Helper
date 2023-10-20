@@ -32,5 +32,12 @@ class Validation {
             }
             return false
         }
+        fun phoneNumberNotValid(context: Context, number: String, message: String): Boolean {
+            if(number.length != 11) {
+                Toast.makeText(context, message , Toast.LENGTH_SHORT).show()
+                return true
+            }
+            return false
+        }
     }
 }
