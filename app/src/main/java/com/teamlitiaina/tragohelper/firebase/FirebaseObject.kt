@@ -14,21 +14,17 @@ class FirebaseObject {
     companion object {
         val auth: FirebaseAuth = FirebaseAuth.getInstance()
         val database: FirebaseDatabase = FirebaseDatabase.getInstance()
-        private lateinit var databaseReference: DatabaseReference
         interface FirebaseCallback {
             fun onDataReceived(data: UserData)
         }
         fun retrieveData(referencePath: String, firebaseCallback: FirebaseCallback) {
-            databaseReference = database.getReference(referencePath)
-            databaseReference.child(auth.currentUser?.uid.toString()).get().addOnSuccessListener {
+            database.getReference(referencePath).child(auth.currentUser?.uid.toString()).get().addOnSuccessListener {
                 if (it.exists())
                     firebaseCallback.onDataReceived(it.getValue(UserData::class.java) ?: UserData())
             }
         }
         fun retrieveUserByEmail(email: String, firebaseCallback: FirebaseCallback) {
-            databaseReference = database.getReference("vehicleOwner")
-            val query = databaseReference.orderByChild("email").equalTo(email)
-            query.addListenerForSingleValueEvent(object : ValueEventListener {
+            database.getReference("vehicleOwner").orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(dataSnapshot: DataSnapshot) {
                     for (snapshot in dataSnapshot.children) {
                         val userData = snapshot.getValue(UserData::class.java)
