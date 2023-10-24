@@ -54,6 +54,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     private var destinationLatitude: Double = 0.0
     private var destinationLongitude: Double = 0.0
     private val locationPermissionRequestCode = 100
+    private var isFollowingCamera = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
@@ -68,6 +69,10 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         createLocationRequest()
         initializeLocationCallback()
         getLastLocation()
+
+        binding.cameraSwtich.setOnCheckedChangeListener { _, isChecked ->
+            isFollowingCamera = isChecked
+        }
 
         binding.addressSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -171,8 +176,10 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     private fun updateMapLocation() {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
-            mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(currentLocation!!.latitude, currentLocation!!.longitude), 18f))
-//            updateDirectionsByOrigin("${currentLocation!!.latitude},${currentLocation!!.longitude}","$destinationLatitude,$destinationLongitude")
+            if (isFollowingCamera) {
+                mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(currentLocation!!.latitude, currentLocation!!.longitude), 18f))
+            }
+            updateDirectionsByOrigin("${currentLocation!!.latitude},${currentLocation!!.longitude}","$destinationLatitude,$destinationLongitude")
             FirebaseObject.database.getReference("vehicleOwnerLocation").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
                 LocationData(FirebaseObject.auth.currentUser?.uid.toString(),MainActivity.currentUserEmail,currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
             ).addOnFailureListener {
@@ -251,6 +258,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     override fun onLocationDataReceived(data: LocationData) {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
+            destinationLatitude = data.latitude.toString().toDouble()
+            destinationLongitude = data.longitude.toString().toDouble()
             updateDirectionsByLatLong(
                 currentLocation!!.latitude,
                 currentLocation!!.longitude,
