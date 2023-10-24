@@ -9,30 +9,31 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/top_constraint_layout"
         android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:background="@color/black"
-        android:elevation="20dp">
+        android:layout_height="85dp"
+        android:elevation="20dp"
+        android:background="@drawable/shadow_button_layer_bottom_background">
 
         <TextView
             android:id="@+id/current_user_name_text_view"
-            android:layout_width="300dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Loading..."
-            android:textColor="@color/white"
+            android:textColor="@color/black"
             android:textSize="20sp"
             android:textStyle="bold"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.324"
+            app:layout_constraintHorizontal_bias="0.144"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.602" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Welcome to Tra-Go Helper"
-            android:textColor="@color/white"
+            android:textColor="@color/black"
             android:textSize="12sp"
             app:layout_constraintEnd_toEndOf="@+id/current_user_name_text_view"
             app:layout_constraintHorizontal_bias="0.0"
@@ -53,8 +54,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp"
+        android:layout_margin="10dp"
         android:background="@drawable/custom_buttom_solid_black_background"
         android:elevation="2dp"
         app:itemIconSize="30dp"

@@ -3,12 +3,13 @@ package com.teamlitiaina.tragohelper.activity
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import androidx.core.view.WindowCompat
+import android.view.WindowManager
+import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityMainBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 import com.teamlitiaina.tragohelper.fragment.FragmentChanger
-import com.teamlitiaina.tragohelper.fragment.MapFragment
+import com.teamlitiaina.tragohelper.fragment.HomeFragment
 
 class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallback {
 
@@ -21,7 +22,10 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+        )
         setContentView(binding.root)
 
         //Debug
@@ -37,11 +41,13 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         }
 
         FirebaseObject.retrieveData("vehicleOwner", this)
-        FragmentChanger.replaceFragment(this@MainActivity, MapFragment(), binding.dashboardLayout.id)
+        FragmentChanger.replaceFragment(this@MainActivity, HomeFragment(), binding.dashboardLayout.id)
     }
     override fun onDataReceived(data: UserData) {
-        binding.currentUserNameTextView.text = "Hi, ${data.name}" ?: "null"
+        binding.currentUserNameTextView.text = "Hi, ${data.name}"
         currentUserEmail = data.email.toString()
     }
+
+    override fun onLocationDataReceived(data: LocationData) {}
 
 }
