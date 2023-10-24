@@ -33,10 +33,13 @@ import com.google.android.gms.maps.model.PolylineOptions
 import com.google.android.gms.tasks.Task
 import com.google.maps.android.PolyUtil
 import com.teamlitiaina.tragohelper.R
+import com.teamlitiaina.tragohelper.activity.MainActivity
+import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.databinding.FragmentMapBinding
+import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 
 @Suppress("DEPRECATION")
-class MapFragment : Fragment(), OnMapReadyCallback{
+class MapFragment : Fragment(), OnMapReadyCallback {
 
     private var mMap: GoogleMap? = null
     private var currentLocation: Location? = null
@@ -50,11 +53,7 @@ class MapFragment : Fragment(), OnMapReadyCallback{
     private var destinationLongitude: Double = 0.0
     private val locationPermissionRequestCode = 100
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentMapBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -67,7 +66,6 @@ class MapFragment : Fragment(), OnMapReadyCallback{
         createLocationRequest()
         initializeLocationCallback()
         getLastLocation()
-
         binding.addressSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 query?.let { getDirections(it) }
@@ -89,60 +87,42 @@ class MapFragment : Fragment(), OnMapReadyCallback{
     }
 
     private fun getDirections(address: String) {
-        val geocodeUrl =
-            "https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=${getString(R.string.MAPS_API_KEY)}"
-
-        val geocodeRequest = JsonObjectRequest(
-            Request.Method.GET, geocodeUrl, null,
+        Volley.newRequestQueue(requireContext()).add(JsonObjectRequest(
+            Request.Method.GET, "https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=${getString(R.string.MAPS_API_KEY)}", null,
             { response ->
                 val results = response.getJSONArray("results")
                 if (results.length() > 0) {
-                    val result = results.getJSONObject(0)
-                    val location = result.getJSONObject("geometry").getJSONObject("location")
+                    val location = results.getJSONObject(0).getJSONObject("geometry").getJSONObject("location")
                     destinationLatitude = location.getDouble("lat")
                     destinationLongitude = location.getDouble("lng")
                 }
-            },
-            { error ->
-                Log.e("Geocode API", "Error: ${error.message}")
-            })
-
-        Volley.newRequestQueue(requireContext()).add(geocodeRequest)
+            }, { error -> Log.e("Geocode API", "Error: ${error.message}") })
+        )
     }
 
     private fun updateDirections(origin: String, destination: String) {
-        val directionsUrl =
-            "https://maps.googleapis.com/maps/api/directions/json?" +
-                    "origin=$origin&destination=$destination&key=${getString(R.string.MAPS_API_KEY)}"
-
-        val queue = Volley.newRequestQueue(requireContext())
-        val directionsRequest = JsonObjectRequest(
-            Request.Method.GET, directionsUrl, null,
+        if (!isAdded) {
+            return
+        }
+        Volley.newRequestQueue(requireContext()).add(JsonObjectRequest(
+            Request.Method.GET, "https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$destination&key=${getString(R.string.MAPS_API_KEY)}", null,
             { response ->
                 val routes = response.getJSONArray("routes")
                 if (routes.length() > 0) {
                     val points = ArrayList<LatLng>()
-                    val legs = routes.getJSONObject(0).getJSONArray("legs")
-                    val steps = legs.getJSONObject(0).getJSONArray("steps")
+                    val steps = routes.getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONArray("steps")
                     for (i in 0 until steps.length()) {
-                        val step = steps.getJSONObject(i)
-                        val pointsString = step.getJSONObject("polyline").getString("points")
-                        points.addAll(PolyUtil.decode(pointsString))
+                        points.addAll(PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points")))
                     }
                     polyline?.remove()
                     polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.BLUE).width(10f))
                     mMap?.clear()
-                    val destinationLatLng = LatLng(destinationLatitude, destinationLongitude)
-                    mMap?.addMarker(MarkerOptions().position(destinationLatLng).title("Destination"))
+                    mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title("Destination"))
                     if (points.isNotEmpty()) {
                         polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.BLUE).width(10f))
                     }
                 }
-            },
-            { error ->
-                Log.e("Directions API", "Error: ${error.message}")
-            })
-        queue.add(directionsRequest)
+            }, { error -> Log.e("Directions API", "Error: ${error.message}") }))
     }
 
     private fun initializeLocationCallback() {
@@ -157,25 +137,22 @@ class MapFragment : Fragment(), OnMapReadyCallback{
     }
 
     private fun updateMapLocation() {
-        currentLocation?.let {
-            val latLng = LatLng(it.latitude, it.longitude)
-            mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 18f))
-            val origin = "${it.latitude},${it.longitude}"
-            val destination = "$destinationLatitude,$destinationLongitude"
-            updateDirections(origin, destination)
+        if (currentLocation != null && isAdded) {
+            mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(currentLocation!!.latitude, currentLocation!!.longitude), 18f))
+            updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","$destinationLatitude,$destinationLongitude")
+            FirebaseObject.database.getReference("vehicleOwnerLocation").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
+                LocationData(FirebaseObject.auth.currentUser?.uid.toString(),MainActivity.currentUserEmail,currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
+            ).addOnFailureListener {
+                Log.e("Update Location","${MainActivity.currentUserEmail}: Location update failed")
+            }
+        } else {
+            Log.e("Update Location", "Current location is null or fragment not attached.")
         }
     }
+
     private fun requestLocationPermission() {
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(
-                    requireActivity(),
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                )
-            ) {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION)) {
                 // Explain why you need the permission
             } else {
                 requestPermissions(
@@ -185,12 +162,9 @@ class MapFragment : Fragment(), OnMapReadyCallback{
             }
         }
     }
+
     @Deprecated("Deprecated in Java")
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         when (requestCode) {
             locationPermissionRequestCode -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -205,18 +179,8 @@ class MapFragment : Fragment(), OnMapReadyCallback{
         }
     }
 
-
     private fun getLastLocation() {
-        if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
+        checkSelfPermission()
         val task: Task<Location> = fusedLocationProviderClient.lastLocation
         task.addOnSuccessListener { location ->
             location?.let {
@@ -229,32 +193,13 @@ class MapFragment : Fragment(), OnMapReadyCallback{
     }
 
     private fun startLocationUpdates() {
-
-        if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
+        checkSelfPermission()
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null)
     }
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        if (ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                requireContext(),
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
-        }
+        checkSelfPermission()
         mMap?.isMyLocationEnabled = true
         currentLocation?.let {
             val latLng = LatLng(it.latitude, it.longitude)
@@ -263,4 +208,9 @@ class MapFragment : Fragment(), OnMapReadyCallback{
         startLocationUpdates()
     }
 
+    private fun checkSelfPermission() {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+    }
 }

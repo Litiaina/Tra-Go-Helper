@@ -22,8 +22,24 @@ class FirebaseObject {
                     firebaseCallback.onDataReceived(it.getValue(UserData::class.java) ?: UserData())
             }
         }
-        fun retrieveUserByEmail(email: String, firebaseCallback: FirebaseCallback) {
-            database.getReference("vehicleOwner").orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object : ValueEventListener {
+        fun retrieveUserByEmail(path: String, email: String, firebaseCallback: FirebaseCallback) {
+            database.getReference(path).orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(dataSnapshot: DataSnapshot) {
+                    for (snapshot in dataSnapshot.children) {
+                        val userData = snapshot.getValue(UserData::class.java)
+                        if (userData != null) {
+                            firebaseCallback.onDataReceived(userData)
+                            break
+                        }
+                    }
+                }
+                override fun onCancelled(databaseError: DatabaseError) {
+                    Log.e("FirebaseError", "Error: ${databaseError.message}")
+                }
+            })
+        }
+        fun retrieveLocationByEmail(email: String, firebaseCallback: FirebaseCallback) {
+            database.getReference("vehicleOwnerLocation").orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(dataSnapshot: DataSnapshot) {
                     for (snapshot in dataSnapshot.children) {
                         val userData = snapshot.getValue(UserData::class.java)

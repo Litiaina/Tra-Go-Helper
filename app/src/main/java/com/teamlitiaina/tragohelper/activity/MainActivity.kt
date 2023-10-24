@@ -14,13 +14,24 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
 
     private lateinit var binding: ActivityMainBinding
 
+    companion object {
+        lateinit var currentUserEmail: String
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(binding.root)
 
+        //Debug
         if (FirebaseObject.auth.uid == null) {
+            startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+            finish()
+        }
+
+        binding.currentUserNameTextView.setOnClickListener {
+            FirebaseObject.auth.signOut()
             startActivity(Intent(this@MainActivity, LoginActivity::class.java))
             finish()
         }
@@ -30,6 +41,7 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
     }
     override fun onDataReceived(data: UserData) {
         binding.currentUserNameTextView.text = "Hi, ${data.name}" ?: "null"
+        currentUserEmail = data.email.toString()
     }
 
 }

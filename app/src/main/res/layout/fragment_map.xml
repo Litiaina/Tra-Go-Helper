@@ -9,13 +9,14 @@
         android:id="@+id/address_search_view"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:queryHint="Search address"/>
+        android:queryHint="Search address" />
 
-    <fragment
+    <androidx.fragment.app.FragmentContainerView
         android:id="@+id/map"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:name="com.google.android.gms.maps.SupportMapFragment"
-        android:layout_below="@id/address_search_view"/>
+        android:layout_below="@id/address_search_view"
+        android:background="@color/black"/>
 
 </RelativeLayout>
