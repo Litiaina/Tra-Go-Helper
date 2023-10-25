@@ -16,7 +16,7 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
     private lateinit var binding: ActivityMainBinding
 
     companion object {
-        lateinit var currentUserEmail: String
+        var currentUserEmail: String? = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,12 +28,12 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         )
         setContentView(binding.root)
 
-        //Debug
         if (FirebaseObject.auth.uid == null) {
             startActivity(Intent(this@MainActivity, LoginActivity::class.java))
             finish()
         }
 
+        //Debug
         binding.currentUserNameTextView.setOnClickListener {
             FirebaseObject.auth.signOut()
             startActivity(Intent(this@MainActivity, LoginActivity::class.java))

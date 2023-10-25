@@ -27,6 +27,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
 import com.google.android.gms.maps.model.PolylineOptions
@@ -51,6 +52,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     private lateinit var locationRequest: LocationRequest
     private lateinit var queue: RequestQueue
     private var polyline: Polyline? = null
+    private var destinationMarker: Marker? = null
     private var destinationLatitude: Double = 0.0
     private var destinationLongitude: Double = 0.0
     private val locationPermissionRequestCode = 100
@@ -113,7 +115,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         )
     }
 
-    private fun updateDirectionsByOrigin(origin: String, destination: String) {
+    private fun updateDirections(origin: String, destination: String) {
         if (!isAdded) {
             return
         }
@@ -127,37 +129,15 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
                     for (i in 0 until steps.length()) {
                         points.addAll(PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points")))
                     }
-                    polyline?.remove()
-                    polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.BLUE).width(10f))
-                    mMap?.clear()
-                    mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title("Destination"))
-                    if (points.isNotEmpty()) {
+                    if (polyline == null) {
                         polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.BLUE).width(10f))
+                    } else {
+                        polyline?.points = points
                     }
-                }
-            }, { error -> Log.e("Directions API", "Error: ${error.message}") }))
-    }
-
-    private fun updateDirectionsByLatLong(originLatitude: Double, originLongitude: Double, destinationLatitude: Double, destinationLongitude: Double) {
-        if (!isAdded) {
-            return
-        }
-        Volley.newRequestQueue(requireContext()).add(JsonObjectRequest(
-            Request.Method.GET, "https://maps.googleapis.com/maps/api/directions/json?origin=$originLatitude,$originLongitude&destination=$destinationLatitude,$destinationLongitude&key=${getString(R.string.MAPS_API_KEY)}", null,
-            { response ->
-                val routes = response.getJSONArray("routes")
-                if (routes.length() > 0) {
-                    val points = ArrayList<LatLng>()
-                    val steps = routes.getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONArray("steps")
-                    for (i in 0 until steps.length()) {
-                        points.addAll(PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points")))
-                    }
-                    polyline?.remove()
-                    polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.BLUE).width(10f))
-                    mMap?.clear()
-                    mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title("Destination"))
-                    if (points.isNotEmpty()) {
-                        polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.BLUE).width(10f))
+                    if (destinationMarker == null) {
+                        destinationMarker = mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title("Destination"))
+                    } else {
+                        destinationMarker?.position = LatLng(destinationLatitude, destinationLongitude)
                     }
                 }
             }, { error -> Log.e("Directions API", "Error: ${error.message}") }))
@@ -179,7 +159,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
             if (isFollowingCamera) {
                 mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(currentLocation!!.latitude, currentLocation!!.longitude), 18f))
             }
-            updateDirectionsByOrigin("${currentLocation!!.latitude},${currentLocation!!.longitude}","$destinationLatitude,$destinationLongitude")
+            updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}")
             FirebaseObject.database.getReference("vehicleOwnerLocation").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
                 LocationData(FirebaseObject.auth.currentUser?.uid.toString(),MainActivity.currentUserEmail,currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
             ).addOnFailureListener {
@@ -260,12 +240,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
             destinationLatitude = data.latitude.toString().toDouble()
             destinationLongitude = data.longitude.toString().toDouble()
-            updateDirectionsByLatLong(
-                currentLocation!!.latitude,
-                currentLocation!!.longitude,
-                data.latitude.toString().toDouble(),
-                data.longitude.toString().toDouble()
-            )
+            updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${data.latitude.toString().toDouble()},${data.longitude.toString().toDouble()}")
         } else {
             Log.e("Update Location", "Current location is null or fragment not attached.")
         }
