@@ -1,8 +1,13 @@
 package com.teamlitiaina.tragohelper.fragment
 
 import android.Manifest
+import android.content.Context.SENSOR_SERVICE
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
@@ -26,6 +31,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
@@ -58,6 +64,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     private var destinationLongitude: Double = 0.0
     private val locationPermissionRequestCode = 100
     private var isFollowingCamera = false
+    private lateinit var sensorManager: SensorManager
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
@@ -73,8 +80,19 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         initializeLocationCallback()
         getLastLocation()
 
+        sensorManager = requireActivity().getSystemService(SENSOR_SERVICE) as SensorManager
+        sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL)
+
         binding.cameraSwtich.setOnCheckedChangeListener { _, isChecked ->
             isFollowingCamera = isChecked
+        }
+
+        binding.myLocationImageButton.setOnClickListener {
+            mMap?.animateCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.Builder()
+                .target(LatLng(currentLocation!!.latitude, currentLocation!!.longitude))
+                .zoom(18f)
+                .tilt(0f)
+                .build()))
         }
 
         binding.addressSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -93,9 +111,14 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
             }
         })
     }
+    override fun onResume() {
+        super.onResume()
+        sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL)
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        sensorManager.unregisterListener(sensorListener)
         _binding = null
     }
 
@@ -108,6 +131,9 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     }
 
     private fun getDirections(address: String) {
+        if (!isAdded) {
+            return
+        }
         Volley.newRequestQueue(requireContext()).add(JsonObjectRequest(
             Request.Method.GET, "https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=${getString(R.string.MAPS_API_KEY)}", null,
             { response ->
@@ -147,6 +173,22 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
             }, { error -> Log.e("Directions API", "Error: ${error.message}") }))
     }
 
+    private val sensorListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            if (currentLocation != null && mMap != null) {
+                if(isFollowingCamera) {
+                    mMap?.animateCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.Builder()
+                        .target(LatLng(currentLocation!!.latitude, currentLocation!!.longitude))
+                        .zoom(19.5f)
+                        .bearing(event.values[0])
+                        .tilt(35f)
+                        .build()))
+                }
+            }
+        }
+        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+    }
+
     private fun initializeLocationCallback() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
@@ -160,9 +202,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     private fun updateMapLocation() {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
-            if (isFollowingCamera) {
-                mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(currentLocation!!.latitude, currentLocation!!.longitude), 18.5f))
-            }
             updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}")
             FirebaseObject.database.getReference("vehicleOwnerLocation").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
                 LocationData(FirebaseObject.auth.currentUser?.uid.toString(),MainActivity.currentUser?.email.toString(),currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
@@ -223,8 +262,12 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         mMap = googleMap
         checkSelfPermission()
         mMap?.isMyLocationEnabled = true
+        mMap?.uiSettings?.isZoomControlsEnabled = false
+        mMap?.uiSettings?.isMyLocationButtonEnabled = false
+        mMap?.uiSettings?.isMapToolbarEnabled = false
+        mMap?.uiSettings?.isCompassEnabled = false
         currentLocation?.let {
-            mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 16f))
+            mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 18f))
         }
         startLocationUpdates()
     }
