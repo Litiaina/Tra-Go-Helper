@@ -16,7 +16,7 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
     private lateinit var binding: ActivityMainBinding
 
     companion object {
-        var currentUserEmail: String? = null
+        var currentUser: UserData? = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,9 +43,9 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         FirebaseObject.retrieveData("vehicleOwner", this)
         FragmentChanger.replaceFragment(this@MainActivity, HomeFragment(), binding.dashboardLayout.id)
     }
-    override fun onDataReceived(data: UserData) {
+    override fun onUserDataReceived(data: UserData) {
         binding.currentUserNameTextView.text = "Hi, ${data.name}"
-        currentUserEmail = data.email.toString()
+        currentUser = data
     }
 
     override fun onLocationDataReceived(data: LocationData) {}

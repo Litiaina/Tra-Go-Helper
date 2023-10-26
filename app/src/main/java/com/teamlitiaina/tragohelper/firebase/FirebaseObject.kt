@@ -16,53 +16,44 @@ class FirebaseObject {
         val auth: FirebaseAuth = FirebaseAuth.getInstance()
         val database: FirebaseDatabase = FirebaseDatabase.getInstance()
         interface FirebaseCallback {
-            fun onDataReceived(data: UserData)
+            fun onUserDataReceived(data: UserData)
             fun onLocationDataReceived(data: LocationData)
         }
         fun retrieveData(referencePath: String, firebaseCallback: FirebaseCallback) {
             database.getReference(referencePath).child(auth.currentUser?.uid.toString()).get().addOnSuccessListener {
                 if (it.exists())
-                    firebaseCallback.onDataReceived(it.getValue(UserData::class.java) ?: UserData())
+                    firebaseCallback.onUserDataReceived(it.getValue(UserData::class.java) ?: UserData())
             }
         }
-        fun retrieveUserByEmail(path: String, email: String, firebaseCallback: FirebaseCallback) {
-            database.getReference(path).orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(dataSnapshot: DataSnapshot) {
-                    for (snapshot in dataSnapshot.children) {
-                        val userData = snapshot.getValue(UserData::class.java)
-                        if (userData != null) {
-                            firebaseCallback.onDataReceived(userData)
-                            break
-                        }
-                    }
+        fun retrieveUserDataByEmail(path: String, email: String, firebaseCallback: FirebaseCallback) {
+            database.getReference(path).orderByChild("email").equalTo(email).addChildEventListener(object : ChildEventListener {
+                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                    snapshot.getValue(UserData::class.java)?.let { firebaseCallback.onUserDataReceived(it) }
                 }
-                override fun onCancelled(databaseError: DatabaseError) {
-                    Log.e("FirebaseError", "Error: ${databaseError.message}")
+                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                    snapshot.getValue(UserData::class.java)?.let { firebaseCallback.onUserDataReceived(it) }
                 }
-            })
-        }
-        fun retrieveLocationByEmail(email: String, firebaseCallback: FirebaseCallback) {
-            val query = database.getReference("vehicleOwnerLocation").orderByChild("email").equalTo(email)
-            query.addChildEventListener(object : ChildEventListener {
-                override fun onChildAdded(dataSnapshot: DataSnapshot, previousChildName: String?) {
-                    val locationData = dataSnapshot.getValue(LocationData::class.java)
-                    locationData?.let { firebaseCallback.onLocationDataReceived(it) }
-                }
-
-                override fun onChildChanged(dataSnapshot: DataSnapshot, previousChildName: String?) {
-                    val locationData = dataSnapshot.getValue(LocationData::class.java)
-                    locationData?.let { firebaseCallback.onLocationDataReceived(it) }
-                }
-
-                override fun onChildRemoved(dataSnapshot: DataSnapshot) {}
-
-                override fun onChildMoved(dataSnapshot: DataSnapshot, previousChildName: String?) {}
-
-                override fun onCancelled(databaseError: DatabaseError) {
-                    Log.e("FirebaseError", "Error: ${databaseError.message}")
+                override fun onChildRemoved(snapshot: DataSnapshot) {}
+                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("FirebaseError", "Error: ${error.message}")
                 }
             })
         }
-
+        fun retrieveLocationDataByEmail(email: String, firebaseCallback: FirebaseCallback) {
+            database.getReference("vehicleOwnerLocation").orderByChild("email").equalTo(email).addChildEventListener(object : ChildEventListener {
+                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                    snapshot.getValue(LocationData::class.java)?.let { firebaseCallback.onLocationDataReceived(it) }
+                }
+                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                    snapshot.getValue(LocationData::class.java)?.let { firebaseCallback.onLocationDataReceived(it) }
+                }
+                override fun onChildRemoved(snapshot: DataSnapshot) {}
+                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("FirebaseError", "Error: ${error.message}")
+                }
+            })
+        }
     }
 }

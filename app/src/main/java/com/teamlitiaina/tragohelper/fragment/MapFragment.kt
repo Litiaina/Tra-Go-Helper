@@ -53,6 +53,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     private lateinit var queue: RequestQueue
     private var polyline: Polyline? = null
     private var destinationMarker: Marker? = null
+    private var destinationName: String? = null
     private var destinationLatitude: Double = 0.0
     private var destinationLongitude: Double = 0.0
     private val locationPermissionRequestCode = 100
@@ -78,7 +79,12 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
         binding.addressSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                query?.let { FirebaseObject.retrieveLocationByEmail(it,this@MapFragment) }
+                query?.let {
+                    if(it != MainActivity.currentUser?.email.toString()) {
+                        FirebaseObject.retrieveUserDataByEmail("vehicleOwner", it, this@MapFragment)
+                        FirebaseObject.retrieveLocationDataByEmail(it,this@MapFragment)
+                    }
+                }
                 return false
             }
 
@@ -96,8 +102,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     private fun createLocationRequest() {
         locationRequest = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            interval = 1000 //original 5000
-            fastestInterval = 1000 //original 2000
+            interval = 1000
+            fastestInterval = 1000
         }
     }
 
@@ -129,15 +135,13 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
                     for (i in 0 until steps.length()) {
                         points.addAll(PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points")))
                     }
-                    if (polyline == null) {
+                    if (polyline == null && destinationMarker == null) {
                         polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.BLUE).width(10f))
+                        destinationMarker = mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title(destinationName))
                     } else {
                         polyline?.points = points
-                    }
-                    if (destinationMarker == null) {
-                        destinationMarker = mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title("Destination"))
-                    } else {
                         destinationMarker?.position = LatLng(destinationLatitude, destinationLongitude)
+                        destinationMarker?.title = destinationName
                     }
                 }
             }, { error -> Log.e("Directions API", "Error: ${error.message}") }))
@@ -157,13 +161,13 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     private fun updateMapLocation() {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
             if (isFollowingCamera) {
-                mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(currentLocation!!.latitude, currentLocation!!.longitude), 18f))
+                mMap?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(currentLocation!!.latitude, currentLocation!!.longitude), 18.5f))
             }
             updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}")
             FirebaseObject.database.getReference("vehicleOwnerLocation").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
-                LocationData(FirebaseObject.auth.currentUser?.uid.toString(),MainActivity.currentUserEmail,currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
+                LocationData(FirebaseObject.auth.currentUser?.uid.toString(),MainActivity.currentUser?.email.toString(),currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
             ).addOnFailureListener {
-                Log.e("Update Location","${MainActivity.currentUserEmail}: Location update failed")
+                Log.e("Update Location","${MainActivity.currentUser?.email.toString()}: Location update failed")
             }
 
         } else {
@@ -176,10 +180,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
             if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION)) {
                 // Explain why you need the permission
             } else {
-                requestPermissions(
-                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                    locationPermissionRequestCode
-                )
+                requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), locationPermissionRequestCode)
             }
         }
     }
@@ -223,7 +224,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         checkSelfPermission()
         mMap?.isMyLocationEnabled = true
         currentLocation?.let {
-            mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 18f))
+            mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 16f))
         }
         startLocationUpdates()
     }
@@ -234,15 +235,21 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         }
     }
 
-    override fun onDataReceived(data: UserData) {}
+    override fun onUserDataReceived(data: UserData) {
+        if(currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
+            destinationName = data.name
+        } else {
+            Log.e("Update Location", "Current location is null or fragment not attached or auth is null.")
+        }
+    }
 
     override fun onLocationDataReceived(data: LocationData) {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
             destinationLatitude = data.latitude.toString().toDouble()
             destinationLongitude = data.longitude.toString().toDouble()
-            updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${data.latitude.toString().toDouble()},${data.longitude.toString().toDouble()}")
+            updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}")
         } else {
-            Log.e("Update Location", "Current location is null or fragment not attached.")
+            Log.e("Update Location", "Current location is null or fragment not attached or auth is null.")
         }
     }
 
