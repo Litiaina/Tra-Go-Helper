@@ -33,6 +33,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.Polyline
@@ -116,6 +117,11 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL)
     }
 
+    override fun onPause() {
+        super.onPause()
+        sensorManager.unregisterListener(sensorListener)
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         sensorManager.unregisterListener(sensorListener)
@@ -162,7 +168,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
                         points.addAll(PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points")))
                     }
                     if (polyline == null && destinationMarker == null) {
-                        polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.BLUE).width(10f))
+                        polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.parseColor("#80b3ff")).width(10f))
                         destinationMarker = mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title(destinationName))
                     } else {
                         polyline?.points = points
@@ -181,7 +187,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
                         .target(LatLng(currentLocation!!.latitude, currentLocation!!.longitude))
                         .zoom(19.5f)
                         .bearing(event.values[0])
-                        .tilt(35f)
+                        .tilt(30f)
                         .build()))
                 }
             }
@@ -260,11 +266,15 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
+        googleMap.setMapStyle(
+            MapStyleOptions.loadRawResourceStyle(
+                requireContext(),
+                R.raw.map_style
+            )
+        )
         checkSelfPermission()
         mMap?.isMyLocationEnabled = true
-        mMap?.uiSettings?.isZoomControlsEnabled = false
         mMap?.uiSettings?.isMyLocationButtonEnabled = false
-        mMap?.uiSettings?.isMapToolbarEnabled = false
         mMap?.uiSettings?.isCompassEnabled = false
         currentLocation?.let {
             mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 18f))

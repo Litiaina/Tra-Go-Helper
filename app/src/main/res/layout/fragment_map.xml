@@ -63,4 +63,11 @@
             tools:ignore="ContentDescription" />
     </RelativeLayout>
 
+    <ImageView
+        android:layout_width="128dp"
+        android:layout_height="35dp"
+        android:layout_marginStart="2dp"
+        android:layout_alignParentBottom="true"
+        android:src="@drawable/tragohelper_logo_img"
+        android:scaleType="fitCenter"/>
 </RelativeLayout>
