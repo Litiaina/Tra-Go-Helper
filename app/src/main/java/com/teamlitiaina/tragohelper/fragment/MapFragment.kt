@@ -79,7 +79,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         createLocationRequest()
         initializeLocationCallback()
         getLastLocation()
-
         sensorManager = requireActivity().getSystemService(SENSOR_SERVICE) as SensorManager
         sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL)
 
@@ -111,6 +110,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
             }
         })
     }
+
     override fun onResume() {
         super.onResume()
         sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL)
