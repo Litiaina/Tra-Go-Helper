@@ -14,7 +14,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.SearchView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -48,7 +47,7 @@ import com.teamlitiaina.tragohelper.databinding.FragmentMapBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 
 @Suppress("DEPRECATION")
-class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.FirebaseCallback {
+class MapFragment(private val email: String? = null) : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.FirebaseCallback {
 
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
@@ -57,7 +56,9 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
-    private lateinit var queue: RequestQueue
+    private val queue: RequestQueue by lazy {
+        Volley.newRequestQueue(requireContext().applicationContext)
+    }
     private var polyline: Polyline? = null
     private var destinationMarker: Marker? = null
     private var destinationName: String? = null
@@ -76,12 +77,14 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         super.onViewCreated(view, savedInstanceState)
         requestLocationPermission()
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireContext())
-        queue = Volley.newRequestQueue(requireContext())
         createLocationRequest()
         initializeLocationCallback()
         getLastLocation()
         sensorManager = requireActivity().getSystemService(SENSOR_SERVICE) as SensorManager
         sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL)
+
+        FirebaseObject.retrieveUserDataByEmail("vehicleOwner", email.toString(), this@MapFragment)
+        FirebaseObject.retrieveLocationDataByEmailRealTime(email.toString(),this@MapFragment)
 
         binding.cameraSwtich.setOnCheckedChangeListener { _, isChecked ->
             isFollowingCamera = isChecked
@@ -94,22 +97,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
                 .tilt(0f)
                 .build()))
         }
-
-        binding.addressSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                query?.let {
-                    if(it != MainActivity.currentUser?.email.toString()) {
-                        FirebaseObject.retrieveUserDataByEmail("vehicleOwner", it, this@MapFragment)
-                        FirebaseObject.retrieveLocationDataByEmail(it,this@MapFragment)
-                    }
-                }
-                return false
-            }
-
-            override fun onQueryTextChange(newText: String?): Boolean {
-                return false
-            }
-        })
     }
 
     override fun onResume() {
@@ -122,9 +109,15 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         sensorManager.unregisterListener(sensorListener)
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        queue.cancelAll(this)
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         sensorManager.unregisterListener(sensorListener)
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
         _binding = null
     }
 
@@ -157,26 +150,25 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         if (!isAdded) {
             return
         }
-        Volley.newRequestQueue(requireContext()).add(JsonObjectRequest(
-            Request.Method.GET, "https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$destination&key=${getString(R.string.MAPS_API_KEY)}", null,
-            { response ->
-                val routes = response.getJSONArray("routes")
-                if (routes.length() > 0) {
-                    val points = ArrayList<LatLng>()
-                    val steps = routes.getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONArray("steps")
-                    for (i in 0 until steps.length()) {
-                        points.addAll(PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points")))
-                    }
-                    if (polyline == null && destinationMarker == null) {
-                        polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.parseColor("#80b3ff")).width(10f))
-                        destinationMarker = mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title(destinationName))
-                    } else {
-                        polyline?.points = points
-                        destinationMarker?.position = LatLng(destinationLatitude, destinationLongitude)
-                        destinationMarker?.title = destinationName
-                    }
+        queue.add(JsonObjectRequest(Request.Method.GET, "https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$destination&key=${getString(R.string.MAPS_API_KEY)}", null,
+        { response ->
+            val routes = response.getJSONArray("routes")
+            if (routes.length() > 0) {
+                val points = ArrayList<LatLng>()
+                val steps = routes.getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONArray("steps")
+                for (i in 0 until steps.length()) {
+                    points.addAll(PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points")))
                 }
-            }, { error -> Log.e("Directions API", "Error: ${error.message}") }))
+                if (polyline == null && destinationMarker == null) {
+                    polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.parseColor("#80b3ff")).width(10f))
+                    destinationMarker = mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title(destinationName))
+                } else {
+                    polyline?.points = points
+                    destinationMarker?.position = LatLng(destinationLatitude, destinationLongitude)
+                    destinationMarker?.title = destinationName
+                }
+            }
+        }, { error -> Log.e("Directions API", "Error: ${error.message}") }))
     }
 
     private val sensorListener = object : SensorEventListener {
@@ -290,6 +282,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     override fun onUserDataReceived(data: UserData) {
         if(currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
+            destinationName = null
             destinationName = data.name
         } else {
             Log.e("Update Location", "Current location is null or fragment not attached or auth is null.")
@@ -298,6 +291,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     override fun onLocationDataReceived(data: LocationData) {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
+            destinationLatitude = 0.0
+            destinationLongitude = 0.0
             destinationLatitude = data.latitude.toString().toDouble()
             destinationLongitude = data.longitude.toString().toDouble()
             updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}")

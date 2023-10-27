@@ -10,6 +10,7 @@ import com.teamlitiaina.tragohelper.databinding.ActivityMainBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 import com.teamlitiaina.tragohelper.fragment.FragmentChanger
 import com.teamlitiaina.tragohelper.fragment.HomeFragment
+import com.teamlitiaina.tragohelper.fragment.MapFragment
 
 class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallback {
 
@@ -17,6 +18,7 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
 
     companion object {
         var currentUser: UserData? = null
+        var mapFragment: MapFragment? = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

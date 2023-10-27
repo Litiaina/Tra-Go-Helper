@@ -6,9 +6,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SearchView
-import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.activity.MainActivity
 import com.teamlitiaina.tragohelper.databinding.FragmentHomeBinding
+import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 
 
 class HomeFragment : Fragment() {
@@ -23,7 +23,26 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        FragmentChanger.replaceFragment(requireActivity(), MapFragment(), binding.homeFragmentLayout.id)
+
+        if (MainActivity.mapFragment == null) {
+            MainActivity.mapFragment = MapFragment()
+            FragmentChanger.replaceFragment(requireActivity(), MainActivity.mapFragment!!, binding.homeFragmentLayout.id)
+        }
+
+        binding.addressSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                query?.let {
+                    MainActivity.mapFragment = MapFragment(it)
+                    FragmentChanger.replaceFragment(requireActivity(), MainActivity.mapFragment!!, binding.homeFragmentLayout.id)
+                }
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                return false
+            }
+        })
+
     }
 
     override fun onDestroyView() {
