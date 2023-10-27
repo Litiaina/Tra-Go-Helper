@@ -123,6 +123,7 @@ class MapFragment(private val data: String? = null) : Fragment(), OnMapReadyCall
         super.onDestroyView()
         sensorManager.unregisterListener(sensorListener)
         fusedLocationProviderClient.removeLocationUpdates(locationCallback)
+        MainActivity.mapFragment = null
         _binding = null
     }
 
