@@ -11,6 +11,7 @@ import android.hardware.SensorManager
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
+import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -47,7 +48,7 @@ import com.teamlitiaina.tragohelper.databinding.FragmentMapBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 
 @Suppress("DEPRECATION")
-class MapFragment(private val email: String? = null) : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.FirebaseCallback {
+class MapFragment(private val data: String? = null) : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.FirebaseCallback {
 
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
@@ -83,8 +84,12 @@ class MapFragment(private val email: String? = null) : Fragment(), OnMapReadyCal
         sensorManager = requireActivity().getSystemService(SENSOR_SERVICE) as SensorManager
         sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL)
 
-        FirebaseObject.retrieveUserDataByEmail("vehicleOwner", email.toString(), this@MapFragment)
-        FirebaseObject.retrieveLocationDataByEmailRealTime(email.toString(),this@MapFragment)
+        if(Patterns.EMAIL_ADDRESS.matcher(data.toString()).matches()) {
+            FirebaseObject.retrieveUserDataByEmail("vehicleOwner", data.toString(), this@MapFragment)
+            FirebaseObject.retrieveLocationDataByEmailRealTime(data.toString(),this@MapFragment)
+        } else {
+            getDirections(data.toString())
+        }
 
         binding.cameraSwtich.setOnCheckedChangeListener { _, isChecked ->
             isFollowingCamera = isChecked
@@ -133,11 +138,12 @@ class MapFragment(private val email: String? = null) : Fragment(), OnMapReadyCal
         if (!isAdded) {
             return
         }
-        Volley.newRequestQueue(requireContext()).add(JsonObjectRequest(
+        queue.add(JsonObjectRequest(
             Request.Method.GET, "https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=${getString(R.string.MAPS_API_KEY)}", null,
             { response ->
                 val results = response.getJSONArray("results")
                 if (results.length() > 0) {
+                    destinationName = results.getJSONObject(0).getString("formatted_address")
                     val location = results.getJSONObject(0).getJSONObject("geometry").getJSONObject("location")
                     destinationLatitude = location.getDouble("lat")
                     destinationLongitude = location.getDouble("lng")
