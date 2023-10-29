@@ -6,7 +6,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".fragment.HomeFragment">
 
-    <SearchView
+    <androidx.appcompat.widget.SearchView
         android:id="@+id/address_search_view"
         android:layout_width="match_parent"
         android:layout_height="50dp"

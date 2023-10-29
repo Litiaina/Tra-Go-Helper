@@ -1,6 +1,7 @@
 package com.teamlitiaina.tragohelper.fragment
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context.SENSOR_SERVICE
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -15,6 +16,7 @@ import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -42,6 +44,7 @@ import com.google.android.gms.tasks.Task
 import com.google.maps.android.PolyUtil
 import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.activity.MainActivity
+import com.teamlitiaina.tragohelper.datetime.DateTime.Companion.getCurrentTime
 import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.FragmentMapBinding
@@ -104,29 +107,6 @@ class MapFragment(private val data: String? = null) : Fragment(), OnMapReadyCall
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        sensorManager.unregisterListener(sensorListener)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        queue.cancelAll(this)
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        sensorManager.unregisterListener(sensorListener)
-        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
-        MainActivity.mapFragment = null
-        _binding = null
-    }
-
     private fun createLocationRequest() {
         locationRequest = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
@@ -150,6 +130,28 @@ class MapFragment(private val data: String? = null) : Fragment(), OnMapReadyCall
                     destinationLongitude = location.getDouble("lng")
                 }
             }, { error -> Log.e("Geocode API", "Error: ${error.message}") })
+        )
+    }
+
+    private fun getLatLngFromAddress(address: String, callback: (LatLng?) -> Unit) {
+        if (!isAdded) {
+            callback(null)
+            return
+        }
+        queue.add(JsonObjectRequest(
+            Request.Method.GET, "https://maps.googleapis.com/maps/api/geocode/json?address=$address&key=${getString(R.string.MAPS_API_KEY)}", null,
+            { response ->
+                val results = response.getJSONArray("results")
+                if (results.length() > 0) {
+                    val location = results.getJSONObject(0).getJSONObject("geometry").getJSONObject("location")
+                    callback(LatLng(location.getDouble("lat"), location.getDouble("lng")))
+                } else {
+                    callback(null)
+                }
+            }, { error ->
+                Log.e("Geocode API", "Error: ${error.message}")
+                callback(null)
+            })
         )
     }
 
@@ -208,6 +210,7 @@ class MapFragment(private val data: String? = null) : Fragment(), OnMapReadyCall
     private fun updateMapLocation() {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
             updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}")
+            updateMapStyle()
             FirebaseObject.database.getReference("vehicleOwnerLocation").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
                 LocationData(FirebaseObject.auth.currentUser?.uid.toString(),MainActivity.currentUser?.email.toString(),currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
             ).addOnFailureListener {
@@ -263,14 +266,28 @@ class MapFragment(private val data: String? = null) : Fragment(), OnMapReadyCall
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null)
     }
 
+    private fun updateMapStyle() {
+        mMap?.let { googleMap ->
+            if (getCurrentTime() in 6..17) {
+                googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                        requireContext(),
+                        R.raw.retro_theme_map_style
+                    )
+                )
+            } else {
+                googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                        requireContext(),
+                        R.raw.night_theme_map_style
+                    )
+                )
+            }
+        }
+    }
+
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        googleMap.setMapStyle(
-            MapStyleOptions.loadRawResourceStyle(
-                requireContext(),
-                R.raw.map_style
-            )
-        )
         checkSelfPermission()
         mMap?.isMyLocationEnabled = true
         mMap?.uiSettings?.isMyLocationButtonEnabled = false
@@ -278,13 +295,46 @@ class MapFragment(private val data: String? = null) : Fragment(), OnMapReadyCall
         currentLocation?.let {
             mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 18f))
         }
+        addMarkers()
         startLocationUpdates()
+        updateMapStyle()
     }
 
     private fun checkSelfPermission() {
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return
         }
+    }
+
+    @SuppressLint("PotentialBehaviorOverride")
+    private fun addMarkers() {
+        val addresses = listOf("")
+        val markers = mutableListOf<Marker>()
+
+        for (address in addresses) {
+            getLatLngFromAddress(address) { latLng ->
+                latLng?.let {
+                    val marker = mMap?.addMarker(MarkerOptions().position(it).title(address))
+                    marker?.let { m ->
+                        markers.add(m)
+                    }
+                }
+            }
+        }
+
+        mMap?.setOnMarkerClickListener { clickedMarker ->
+            markers.forEach { marker ->
+                if (clickedMarker == marker) {
+                    Toast.makeText(requireContext(), "Clicked on ${marker.title}", Toast.LENGTH_SHORT).show()
+                    return@setOnMarkerClickListener true
+                }
+            }
+            false
+        }
+    }
+
+    override fun onAllDataReceived(dataArray: List<UserData>) {
+
     }
 
     override fun onUserDataReceived(data: UserData) {
@@ -308,4 +358,25 @@ class MapFragment(private val data: String? = null) : Fragment(), OnMapReadyCall
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        sensorManager.unregisterListener(sensorListener)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        queue.cancelAll(this)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        sensorManager.unregisterListener(sensorListener)
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
+        _binding = null
+    }
 }

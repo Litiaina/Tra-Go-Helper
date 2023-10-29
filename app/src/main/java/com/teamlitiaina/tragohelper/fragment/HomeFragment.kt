@@ -5,10 +5,8 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.SearchView
 import com.teamlitiaina.tragohelper.activity.MainActivity
 import com.teamlitiaina.tragohelper.databinding.FragmentHomeBinding
-import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 
 
 class HomeFragment : Fragment() {
@@ -29,7 +27,7 @@ class HomeFragment : Fragment() {
             FragmentChanger.replaceFragment(requireActivity(), MainActivity.mapFragment!!, binding.homeFragmentLayout.id)
         }
 
-        binding.addressSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+        binding.addressSearchView.setOnQueryTextListener(object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 query?.let {
                     MainActivity.mapFragment = MapFragment(it)

@@ -17,6 +17,7 @@ class FirebaseObject {
         interface FirebaseCallback {
             fun onUserDataReceived(data: UserData)
             fun onLocationDataReceived(data: LocationData)
+            fun onAllDataReceived(dataArray: List<UserData>)
         }
         fun retrieveData(referencePath: String, firebaseCallback: FirebaseCallback) {
             database.getReference(referencePath).child(auth.currentUser?.uid.toString()).get().addOnSuccessListener {
@@ -24,6 +25,17 @@ class FirebaseObject {
                     firebaseCallback.onUserDataReceived(it.getValue(UserData::class.java) ?: UserData())
             }
         }
+        fun retrieveAllData(referencePath: String, firebaseCallback: FirebaseCallback) {
+            database.getReference(referencePath).get().addOnSuccessListener { dataSnapshot ->
+                val dataList = mutableListOf<UserData>()
+                for (snapshot in dataSnapshot.children) {
+                    val data = snapshot.getValue(UserData::class.java)
+                    data?.let { dataList.add(it) }
+                }
+                firebaseCallback.onAllDataReceived(dataList)
+            }
+        }
+
         fun retrieveUserDataByEmail(path: String, email: String, firebaseCallback: FirebaseCallback) {
             database.getReference(path).orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {

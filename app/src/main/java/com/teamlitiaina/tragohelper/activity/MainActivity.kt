@@ -45,6 +45,9 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         FirebaseObject.retrieveData("vehicleOwner", this)
         FragmentChanger.replaceFragment(this@MainActivity, HomeFragment(), binding.dashboardLayout.id)
     }
+
+    override fun onAllDataReceived(dataArray: List<UserData>) {}
+
     override fun onUserDataReceived(data: UserData) {
         binding.currentUserNameTextView.text = "Hi, ${data.name}"
         currentUser = data
@@ -52,4 +55,8 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
 
     override fun onLocationDataReceived(data: LocationData) {}
 
+    override fun onDestroy() {
+        super.onDestroy()
+        mapFragment = null
+    }
 }
