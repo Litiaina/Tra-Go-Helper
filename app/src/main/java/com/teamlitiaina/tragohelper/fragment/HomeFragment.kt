@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import com.teamlitiaina.tragohelper.activity.MainActivity
 import com.teamlitiaina.tragohelper.databinding.FragmentHomeBinding
 
-
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
