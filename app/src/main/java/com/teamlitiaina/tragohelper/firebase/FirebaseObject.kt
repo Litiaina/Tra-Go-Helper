@@ -10,7 +10,6 @@ import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 
 class FirebaseObject {
-
     companion object {
         val auth: FirebaseAuth = FirebaseAuth.getInstance()
         val database: FirebaseDatabase = FirebaseDatabase.getInstance()
@@ -26,16 +25,21 @@ class FirebaseObject {
             }
         }
         fun retrieveAllData(referencePath: String, firebaseCallback: FirebaseCallback) {
-            database.getReference(referencePath).get().addOnSuccessListener { dataSnapshot ->
-                val dataList = mutableListOf<UserData>()
-                for (snapshot in dataSnapshot.children) {
-                    val data = snapshot.getValue(UserData::class.java)
-                    data?.let { dataList.add(it) }
+            val dataList = mutableListOf<UserData>()
+            database.getReference(referencePath).addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(dataSnapshot: DataSnapshot) {
+                    dataList.clear()
+                    for (snapshot in dataSnapshot.children) {
+                        snapshot.getValue(UserData::class.java)?.let { dataList.add(it) }
+                    }
+                    firebaseCallback.onAllDataReceived(dataList)
                 }
-                firebaseCallback.onAllDataReceived(dataList)
-            }
-        }
 
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("FirebaseError", "Error retrieving data: $error")
+                }
+            })
+        }
         fun retrieveUserDataByEmail(path: String, email: String, firebaseCallback: FirebaseCallback) {
             database.getReference(path).orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
@@ -49,12 +53,24 @@ class FirebaseObject {
                 }
             })
         }
+        fun retrieveUserDataByEmailRealTime(email: String, firebaseCallback: FirebaseCallback) {
+            database.getReference("vehicleOwner").orderByChild("email").equalTo(email).addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    snapshot.children.forEach { data ->
+                        val userData = data.getValue(UserData::class.java)
+                        userData?.let { firebaseCallback.onUserDataReceived(it) }
+                    }
+                }
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("FirebaseError", "Error: ${error.message}")
+                }
+            })
+        }
         fun retrieveLocationDataByEmail(email: String, firebaseCallback: FirebaseCallback) {
             database.getReference("vehicleOwnerLocation").orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     for (childSnapshot in snapshot.children) {
                         val locationData = childSnapshot.getValue(LocationData::class.java)
-
                         locationData?.let { firebaseCallback.onLocationDataReceived(it) }
                     }
                 }

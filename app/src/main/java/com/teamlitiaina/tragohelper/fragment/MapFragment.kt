@@ -51,7 +51,7 @@ import com.teamlitiaina.tragohelper.databinding.FragmentMapBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 
 @Suppress("DEPRECATION")
-class MapFragment(private val data: String? = null) : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.FirebaseCallback {
+class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.FirebaseCallback {
 
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
@@ -87,13 +87,6 @@ class MapFragment(private val data: String? = null) : Fragment(), OnMapReadyCall
         sensorManager = requireActivity().getSystemService(SENSOR_SERVICE) as SensorManager
         sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL)
 
-        if(Patterns.EMAIL_ADDRESS.matcher(data.toString()).matches()) {
-            FirebaseObject.retrieveUserDataByEmail("vehicleOwner", data.toString(), this@MapFragment)
-            FirebaseObject.retrieveLocationDataByEmailRealTime(data.toString(),this@MapFragment)
-        } else {
-            getDirections(data.toString())
-        }
-
         binding.cameraSwtich.setOnCheckedChangeListener { _, isChecked ->
             isFollowingCamera = isChecked
         }
@@ -112,6 +105,21 @@ class MapFragment(private val data: String? = null) : Fragment(), OnMapReadyCall
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
             interval = 1000
             fastestInterval = 1000
+        }
+    }
+
+    fun updateData(data: String) {
+        polyline = null
+        destinationMarker = null
+        destinationName = null
+        destinationLatitude = 0.0
+        destinationLongitude = 0.0
+        mMap?.clear()
+        if(Patterns.EMAIL_ADDRESS.matcher(data).matches()) {
+            FirebaseObject.retrieveUserDataByEmailRealTime(data, this@MapFragment)
+            FirebaseObject.retrieveLocationDataByEmailRealTime(data,this@MapFragment)
+        } else {
+            getDirections(data)
         }
     }
 
@@ -348,8 +356,6 @@ class MapFragment(private val data: String? = null) : Fragment(), OnMapReadyCall
 
     override fun onLocationDataReceived(data: LocationData) {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
-            destinationLatitude = 0.0
-            destinationLongitude = 0.0
             destinationLatitude = data.latitude.toString().toDouble()
             destinationLongitude = data.longitude.toString().toDouble()
             updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}")
