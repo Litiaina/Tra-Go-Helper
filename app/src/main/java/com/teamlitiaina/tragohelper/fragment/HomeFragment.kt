@@ -76,6 +76,9 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
     }
 
     override fun onDataReceived(distance: String, position: Int) {
+        if(!isAdded) {
+            return
+        }
         binding.sevicesRecyclerView.post {
             val holder = binding.sevicesRecyclerView.findViewHolderForAdapterPosition(position) as? SelectServiceAdapter.ViewHolder
             holder?.binding?.distanceTextView?.text = distance
