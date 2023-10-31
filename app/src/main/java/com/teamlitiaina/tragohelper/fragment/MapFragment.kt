@@ -176,6 +176,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
                 for (i in 0 until steps.length()) {
                     points.addAll(PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points")))
                 }
+                //binding.distanceTextView.text = routes.getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONObject("distance").getString("text")
                 if (polyline == null && destinationMarker == null) {
                     polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.parseColor("#80b3ff")).width(10f))
                     destinationMarker = mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title(destinationName))
@@ -187,6 +188,27 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
             }
         }, { error -> Log.e("Directions API", "Error: ${error.message}") }))
     }
+
+    fun getCurrentDistance(origin: String, destination: String, callback: (String?) -> Unit) {
+        if (!isAdded) {
+            callback(null)
+            return
+        }
+        queue.add(JsonObjectRequest(Request.Method.GET, "https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$destination&key=${getString(R.string.MAPS_API_KEY)}", null,
+            { response ->
+                val routes = response.getJSONArray("routes")
+                if (routes.length() > 0) {
+                    val currentDistance = routes.getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONObject("distance").getString("text")
+                    callback(currentDistance)
+                } else {
+                    callback(null)
+                }
+            }, { error ->
+                Log.e("Directions API", "Error: ${error.message}")
+                callback(null)
+            }))
+    }
+
 
     private val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent) {
@@ -217,7 +239,14 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     private fun updateMapLocation() {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
+            MainActivity.currentUserLongitude = currentLocation!!.latitude.toString()
+            MainActivity.currentUserLongitude = currentLocation!!.longitude.toString()
             updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}")
+            getCurrentDistance("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}") {distance ->
+                if(distance != null) {
+                    binding.distanceTextView.text = distance
+                }
+            }
             updateMapStyle()
             FirebaseObject.database.getReference("vehicleOwnerLocation").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
                 LocationData(FirebaseObject.auth.currentUser?.uid.toString(),MainActivity.currentUser?.email.toString(),currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
@@ -341,9 +370,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         }
     }
 
-    override fun onAllDataReceived(dataArray: List<UserData>) {
-
-    }
+    override fun onAllDataReceived(dataArray: List<UserData>) {}
 
     override fun onUserDataReceived(data: UserData) {
         if(currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
@@ -356,9 +383,16 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     override fun onLocationDataReceived(data: LocationData) {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
+            MainActivity.currentUserLongitude = currentLocation!!.latitude.toString()
+            MainActivity.currentUserLongitude = currentLocation!!.longitude.toString()
             destinationLatitude = data.latitude.toString().toDouble()
             destinationLongitude = data.longitude.toString().toDouble()
             updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}")
+            getCurrentDistance("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}") { distance ->
+                if(distance != null) {
+                    binding.distanceTextView.text = distance
+                }
+            }
         } else {
             Log.e("Update Location", "Current location is null or fragment not attached or auth is null.")
         }

@@ -242,11 +242,11 @@
             android:id="@+id/bottom_sheet"
             android:layout_width="match_parent"
             android:layout_height="350dp"
-            android:layout_marginStart="10dp"
-            android:layout_marginEnd="10dp"
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="6dp"
             android:background="@drawable/bottom_sheet_background_top_rounded"
             app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
-            app:behavior_peekHeight="25dp">
+            app:behavior_peekHeight="30dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -256,18 +256,41 @@
                 <ImageView
                     android:id="@+id/show_bottom_sheet_imageView"
                     android:layout_width="match_parent"
-                    android:layout_height="25dp"
+                    android:layout_height="30dp"
                     android:src="@drawable/baseline_keyboard_arrow_up"/>
 
-                <TextView
+                <RelativeLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="20dp"
-                    android:text="Nearest Auto Services"
-                    android:textStyle="bold"
-                    android:textColor="@color/black"
-                    android:textSize="18sp"
-                    android:gravity="center|start"/>
+                    android:layout_height="50dp"
+                    android:orientation="horizontal" >
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/black"/>
+                    <TextView
+                        android:id="@+id/nearest_text_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginEnd="20dp"
+                        android:text="Nearest Auto Services"
+                        android:textStyle="bold"
+                        android:textColor="@color/black"
+                        android:textSize="18sp"
+                        android:gravity="center|start"/>
+                    <ImageButton
+                        android:id="@+id/refresh_image_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/baseline_refresh"
+                        android:backgroundTint="@color/black"
+                        android:layout_alignEnd="@id/nearest_text_view"/>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/black"
+                        android:layout_alignParentBottom="true"/>
+                </RelativeLayout>
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/sevices_recycler_view"
