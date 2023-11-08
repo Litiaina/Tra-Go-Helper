@@ -3,6 +3,7 @@ package com.teamlitiaina.tragohelper.fragment
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context.SENSOR_SERVICE
+import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.hardware.Sensor
@@ -10,6 +11,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.Patterns
@@ -20,15 +22,20 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentTransaction
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
+import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.Granularity
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.LocationSettingsRequest
+import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -44,13 +51,13 @@ import com.google.android.gms.tasks.Task
 import com.google.maps.android.PolyUtil
 import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.activity.MainActivity
+import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.REQUEST_CHECK_SETTINGS
 import com.teamlitiaina.tragohelper.datetime.DateTime.Companion.getCurrentTime
 import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.FragmentMapBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 
-@Suppress("DEPRECATION")
 class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.FirebaseCallback {
 
     private var _binding: FragmentMapBinding? = null
@@ -68,7 +75,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     private var destinationName: String? = null
     private var destinationLatitude: Double = 0.0
     private var destinationLongitude: Double = 0.0
-    private val locationPermissionRequestCode = 100
     private var isFollowingCamera = false
     private lateinit var sensorManager: SensorManager
 
@@ -79,13 +85,13 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        requestLocationPermission()
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireContext())
         createLocationRequest()
+        checkLocationSettings()
         initializeLocationCallback()
         getLastLocation()
         sensorManager = requireActivity().getSystemService(SENSOR_SERVICE) as SensorManager
-        sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL)
+        sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_NORMAL)
 
         binding.cameraSwtich.setOnCheckedChangeListener { _, isChecked ->
             isFollowingCamera = isChecked
@@ -101,10 +107,23 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     }
 
     private fun createLocationRequest() {
-        locationRequest = LocationRequest.create().apply {
-            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            interval = 1000
-            fastestInterval = 1000
+        locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000).apply {
+            setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
+            setWaitForAccurateLocation(true)
+        }.build()
+    }
+
+    private fun checkLocationSettings() {
+        val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
+        val client = LocationServices.getSettingsClient(requireContext())
+        client.checkLocationSettings(builder.build()).addOnFailureListener { exception ->
+            if (exception is ResolvableApiException) {
+                try {
+                    exception.startResolutionForResult(requireActivity(), REQUEST_CHECK_SETTINGS)
+                } catch (sendEx: IntentSender.SendIntentException) {
+                    Log.e("Enable Location", "Error: ${sendEx.message}")
+                }
+            }
         }
     }
 
@@ -176,7 +195,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
                 for (i in 0 until steps.length()) {
                     points.addAll(PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points")))
                 }
-                //binding.distanceTextView.text = routes.getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONObject("distance").getString("text")
                 if (polyline == null && destinationMarker == null) {
                     polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.parseColor("#80b3ff")).width(10f))
                     destinationMarker = mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title(destinationName))
@@ -207,23 +225,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
                 Log.e("Directions API", "Error: ${error.message}")
                 callback(null)
             }))
-    }
-
-
-    private val sensorListener = object : SensorEventListener {
-        override fun onSensorChanged(event: SensorEvent) {
-            if (currentLocation != null && mMap != null) {
-                if(isFollowingCamera) {
-                    mMap?.animateCamera(CameraUpdateFactory.newCameraPosition(CameraPosition.Builder()
-                        .target(LatLng(currentLocation!!.latitude, currentLocation!!.longitude))
-                        .zoom(19.5f)
-                        .bearing(event.values[0])
-                        .tilt(30f)
-                        .build()))
-                }
-            }
-        }
-        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
     }
 
     private fun initializeLocationCallback() {
@@ -258,35 +259,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
             Log.e("Update Location", "Current location is null or fragment not attached.")
         }
     }
-
-    private fun requestLocationPermission() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(requireActivity(), Manifest.permission.ACCESS_FINE_LOCATION)) {
-                // Explain why you need the permission
-            } else {
-                requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), locationPermissionRequestCode)
-            }
-        }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        when (requestCode) {
-            locationPermissionRequestCode -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    createLocationRequest()
-                    initializeLocationCallback()
-                    getLastLocation()
-                } else {
-                    requireActivity().finish()
-                }
-                return
-            }
-        }
-    }
-
     private fun getLastLocation() {
-        checkSelfPermission()
+        checkLocationPermission()
         val task: Task<Location> = fusedLocationProviderClient.lastLocation
         task.addOnSuccessListener { location ->
             location?.let {
@@ -299,8 +273,16 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     }
 
     private fun startLocationUpdates() {
-        checkSelfPermission()
+        checkLocationPermission()
         fusedLocationProviderClient.requestLocationUpdates(locationRequest, locationCallback, null)
+    }
+
+    private fun stopLocationUpdates() {
+        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
+    }
+
+    private fun checkLocationPermission(): Boolean {
+        return (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)
     }
 
     private fun updateMapStyle() {
@@ -325,7 +307,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        checkSelfPermission()
+        checkLocationPermission()
         mMap?.isMyLocationEnabled = true
         mMap?.uiSettings?.isMyLocationButtonEnabled = false
         mMap?.uiSettings?.isCompassEnabled = false
@@ -335,12 +317,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         addMarkers()
         startLocationUpdates()
         updateMapStyle()
-    }
-
-    private fun checkSelfPermission() {
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return
-        }
     }
 
     @SuppressLint("PotentialBehaviorOverride")
@@ -398,14 +374,43 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         }
     }
 
+    private val sensorListener = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            if (currentLocation != null && mMap != null) {
+                if (isFollowingCamera) {
+                    val rotationMatrix = FloatArray(9)
+                    SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+
+                    val orientationValues = FloatArray(3)
+                    SensorManager.getOrientation(rotationMatrix, orientationValues)
+
+                    mMap?.animateCamera(
+                        CameraUpdateFactory.newCameraPosition(
+                            CameraPosition.Builder()
+                                .target(LatLng(currentLocation!!.latitude, currentLocation!!.longitude))
+                                .zoom(19.5f)
+                                .bearing(Math.toDegrees(orientationValues[0].toDouble()).toFloat())
+                                .tilt(30f)
+                                .build()
+                        )
+                    )
+                }
+            }
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
+    }
+
     override fun onResume() {
         super.onResume()
-        sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION), SensorManager.SENSOR_DELAY_NORMAL)
+        sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_NORMAL)
+        startLocationUpdates()
     }
 
     override fun onPause() {
         super.onPause()
         sensorManager.unregisterListener(sensorListener)
+        stopLocationUpdates()
     }
 
     override fun onDestroy() {
