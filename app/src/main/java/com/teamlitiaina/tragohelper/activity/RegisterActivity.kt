@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.core.view.WindowCompat
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityRegisterBinding
+import com.teamlitiaina.tragohelper.dialog.LoadingDialog
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 import com.teamlitiaina.tragohelper.validation.Validation
 
@@ -47,6 +48,8 @@ class RegisterActivity : AppCompatActivity() {
                     this@RegisterActivity,
                     binding.phoneNumberEditText.text.toString(),
                     "Phone number not valid") ) {
+                val loadingDialog = LoadingDialog()
+                loadingDialog.show(supportFragmentManager, "Loading")
                 FirebaseObject.auth.createUserWithEmailAndPassword(binding.emailEditText.text.toString(), binding.passwordEditText.text.toString()).addOnSuccessListener {
                     FirebaseObject.database.getReference("vehicleOwner").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
                         UserData(FirebaseObject.auth.currentUser?.uid.toString(),binding.nameEditText.text.toString(),binding.emailEditText.text.toString(),binding.phoneNumberEditText.text.toString(),"")
@@ -54,11 +57,14 @@ class RegisterActivity : AppCompatActivity() {
                         Toast.makeText(this@RegisterActivity, "Register Success", Toast.LENGTH_SHORT).show()
                         startActivity(Intent(this@RegisterActivity, MainActivity::class.java))
                         finish()
+                        loadingDialog.dismiss()
                     }.addOnFailureListener { e ->
                         Toast.makeText(this@RegisterActivity, "Error! $e", Toast.LENGTH_SHORT).show()
+                        loadingDialog.dismiss()
                     }
                 }.addOnFailureListener { e ->
                     Toast.makeText(this@RegisterActivity, "Error! $e", Toast.LENGTH_SHORT).show()
+                    loadingDialog.dismiss()
                 }
             }
         }

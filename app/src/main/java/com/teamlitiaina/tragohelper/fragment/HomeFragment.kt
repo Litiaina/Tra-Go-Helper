@@ -32,7 +32,9 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
 
         if (MainActivity.mapFragment == null) {
             MainActivity.mapFragment = MapFragment()
-            FragmentChanger.replaceFragment(requireActivity(), MainActivity.mapFragment!!, binding.homeFragmentLayout.id)
+            childFragmentManager.beginTransaction().replace(binding.homeFragmentLayout.id, MainActivity.mapFragment!!).commit()
+        } else {
+            childFragmentManager.beginTransaction().replace(binding.homeFragmentLayout.id, MainActivity.mapFragment!!).commit()
         }
 
         binding.addressSearchView.setOnQueryTextListener(object : androidx.appcompat.widget.SearchView.OnQueryTextListener {

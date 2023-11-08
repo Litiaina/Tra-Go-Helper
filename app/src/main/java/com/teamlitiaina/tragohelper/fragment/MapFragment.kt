@@ -53,6 +53,7 @@ import com.teamlitiaina.tragohelper.datetime.DateTime.Companion.getCurrentTime
 import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.FragmentMapBinding
+import com.teamlitiaina.tragohelper.dialog.LoadingDialog
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 
 class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.FirebaseCallback {
@@ -74,6 +75,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     private var destinationLongitude: Double = 0.0
     private var isFollowingCamera = false
     private lateinit var sensorManager: SensorManager
+    private var loadingDialog: LoadingDialog? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
@@ -82,6 +84,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        loadingDialog = LoadingDialog()
+        loadingDialog?.show(parentFragmentManager, "Loading")
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireContext())
         createLocationRequest()
         checkLocationSettings()
@@ -314,6 +318,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         addMarkers()
         startLocationUpdates()
         updateMapStyle()
+        loadingDialog?.dismiss()
     }
 
     @SuppressLint("PotentialBehaviorOverride")

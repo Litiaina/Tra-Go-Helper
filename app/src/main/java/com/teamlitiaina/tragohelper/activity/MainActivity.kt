@@ -13,6 +13,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
+import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.LOCATION_PERMISSION_REQUEST_CODE
 import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.SETTINGS_REQUEST_CODE
 import com.teamlitiaina.tragohelper.data.LocationData
@@ -22,6 +24,7 @@ import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 import com.teamlitiaina.tragohelper.fragment.FragmentChanger
 import com.teamlitiaina.tragohelper.fragment.HomeFragment
 import com.teamlitiaina.tragohelper.fragment.MapFragment
+import com.teamlitiaina.tragohelper.fragment.ProfileFragment
 
 class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallback {
 
@@ -55,13 +58,30 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
             finish()
         }
 
-        //Debug
-        binding.currentUserNameTextView.setOnClickListener {
-            FirebaseObject.auth.signOut()
-            startActivity(Intent(this@MainActivity, LoginActivity::class.java))
-            finish()
-        }
         FirebaseObject.retrieveData("vehicleOwner", this)
+
+        binding.navigationBarBottomNavigationView.setOnItemSelectedListener { item ->
+            val currentFragment = supportFragmentManager.findFragmentById(binding.dashboardLayout.id)
+            when (item.itemId) {
+                R.id.navigation_home -> {
+                    if(currentFragment !is HomeFragment) {
+                        FragmentChanger.replaceFragment(this@MainActivity, HomeFragment(), binding.dashboardLayout.id)
+                        binding.topConstraintLayout.isVisible = true
+                    }
+                    true
+                }
+                R.id.navigation_profile -> {
+                    if(currentFragment !is ProfileFragment) {
+                        FragmentChanger.replaceFragment(this@MainActivity, ProfileFragment(), binding.dashboardLayout.id)
+                        binding.topConstraintLayout.isVisible = false
+                    }
+                    true
+                }
+                else -> {
+                    false
+                }
+            }
+        }
     }
 
     override fun onDestroy() {
