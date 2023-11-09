@@ -30,13 +30,6 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
         binding.sevicesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         FirebaseObject.retrieveAllData("vehicleOwner", this)
 
-        if (MainActivity.mapFragment == null) {
-            MainActivity.mapFragment = MapFragment()
-            childFragmentManager.beginTransaction().replace(binding.homeFragmentLayout.id, MainActivity.mapFragment!!).commit()
-        } else {
-            childFragmentManager.beginTransaction().replace(binding.homeFragmentLayout.id, MainActivity.mapFragment!!).commit()
-        }
-
         binding.addressSearchView.setOnQueryTextListener(object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 query?.let {

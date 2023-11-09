@@ -19,6 +19,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import com.android.volley.Request
 import com.android.volley.RequestQueue
@@ -241,6 +242,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     private fun updateMapLocation() {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
+            binding.loadingLocationLinearLayout.isVisible = false
             MainActivity.currentUserLongitude = currentLocation!!.latitude.toString()
             MainActivity.currentUserLongitude = currentLocation!!.longitude.toString()
             updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}")

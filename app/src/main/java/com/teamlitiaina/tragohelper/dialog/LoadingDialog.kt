@@ -13,6 +13,7 @@ class LoadingDialog : DialogFragment() {
     private val binding get() = _binding!!
     private var dialog: AlertDialog? = null
 
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val builder = AlertDialog.Builder(requireActivity())
         _binding = CustomLayoutLoadingDialogBinding.inflate(LayoutInflater.from(requireContext()))
@@ -26,6 +27,7 @@ class LoadingDialog : DialogFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+        dialog?.dismiss()
     }
 
 }

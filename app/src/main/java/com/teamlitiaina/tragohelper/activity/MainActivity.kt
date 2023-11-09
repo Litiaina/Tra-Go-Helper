@@ -47,7 +47,9 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         )
         setContentView(binding.root)
 
+        mapFragment = MapFragment()
         requestPermissions()
+        FragmentChanger.replaceFragment(this@MainActivity, HomeFragment(), binding.dashboardLayout.id)
 
         sharedPreferences = getSharedPreferences("currentUserLocation", Context.MODE_PRIVATE)
         currentUserLatitude = sharedPreferences.getString("latitude", "")
@@ -67,6 +69,7 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
                     if(currentFragment !is HomeFragment) {
                         FragmentChanger.replaceFragment(this@MainActivity, HomeFragment(), binding.dashboardLayout.id)
                         binding.topConstraintLayout.isVisible = true
+                        binding.viewMapFrameLayout.isVisible = true
                     }
                     true
                 }
@@ -74,6 +77,7 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
                     if(currentFragment !is ProfileFragment) {
                         FragmentChanger.replaceFragment(this@MainActivity, ProfileFragment(), binding.dashboardLayout.id)
                         binding.topConstraintLayout.isVisible = false
+                        binding.viewMapFrameLayout.isVisible = false
                     }
                     true
                 }
@@ -133,7 +137,9 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == SETTINGS_REQUEST_CODE) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PERMISSION_GRANTED) {
-                FragmentChanger.replaceFragment(this@MainActivity, HomeFragment(), binding.dashboardLayout.id)
+                mapFragment?.let {
+                    FragmentChanger.replaceFragment(this@MainActivity, it, binding.viewMapFrameLayout.id)
+                }
             } else {
                 finish()
             }
@@ -151,7 +157,9 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
                 )
             }
         } else {
-            FragmentChanger.replaceFragment(this@MainActivity, HomeFragment(), binding.dashboardLayout.id)
+            mapFragment?.let {
+                FragmentChanger.replaceFragment(this@MainActivity, it, binding.viewMapFrameLayout.id)
+            }
         }
     }
 
@@ -160,7 +168,9 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         when (requestCode) {
             LOCATION_PERMISSION_REQUEST_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PERMISSION_GRANTED) {
-                    FragmentChanger.replaceFragment(this@MainActivity, HomeFragment(), binding.dashboardLayout.id)
+                    mapFragment?.let {
+                        FragmentChanger.replaceFragment(this@MainActivity, it, binding.viewMapFrameLayout.id)
+                    }
                 } else {
                     showPermissionRationaleDialog()
                 }
