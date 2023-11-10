@@ -44,14 +44,34 @@ class SelectServiceAdapter(private val dataArray: List<UserData>, private val ac
 
             override fun onLocationDataReceived(data: LocationData) {
                 if (MainActivity.currentUserLatitude != null && MainActivity.currentUserLongitude != null) {
-                    MainActivity.mapFragment?.getCurrentDistance(
-                        "${MainActivity.currentUserLatitude},${MainActivity.currentUserLongitude}", "${data.latitude},${data.longitude}"
+                    MainActivity.mapFragment?.getDistanceHaversine(
+                        MainActivity.currentUserLatitude!!.toDouble(),
+                        MainActivity.currentUserLongitude!!.toDouble(),
+                        data.latitude!!.toDouble(),
+                        data.longitude!!.toDouble()
                     ) { distance ->
                         if (distance != null && holder.currentData?.email == currentItem.email) {
-                            dataReceivedListener?.onDataReceived(distance, holder.adapterPosition)
+                            MainActivity.mapFragment?.formatDistance(distance)
+                                ?.let {
+                                    dataReceivedListener?.onDataReceived(
+                                        it,
+                                        holder.adapterPosition
+                                    )
+                                }
                         }
                     }
                 }
+//                --- Usage will increase cpu but will get accurate distance
+//                if (MainActivity.currentUserLatitude != null && MainActivity.currentUserLongitude != null) {
+//                    MainActivity.mapFragment?.getDistance(
+//                        MainActivity.currentUserLatitude!!.toDouble(), MainActivity.currentUserLongitude!!.toDouble(), data.latitude!!.toDouble(), data.longitude!!.toDouble()
+//                    ) { distance ->
+//                        if (distance != null && holder.currentData?.email == currentItem.email) {
+//                            dataReceivedListener?.onDataReceived(distance, holder.adapterPosition)
+//                        }
+//                    }
+//                }
+//                ---
             }
 
             override fun onAllDataReceived(dataArray: List<UserData>) {}

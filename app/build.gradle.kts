@@ -57,4 +57,8 @@ dependencies {
     implementation("com.google.maps.android:android-maps-utils:2.2.0")
     implementation("com.github.ybq:Android-SpinKit:1.4.0")
     implementation("de.hdodenhof:circleimageview:3.1.0")
+    implementation("org.osmdroid:osmdroid-android:6.1.17")
+    implementation("org.osmdroid:osmdroid-mapsforge:6.1.17")
+    implementation("com.github.MKergall:osmbonuspack:6.9.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
 }

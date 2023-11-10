@@ -8,6 +8,7 @@ import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -25,6 +26,7 @@ import com.teamlitiaina.tragohelper.fragment.FragmentChanger
 import com.teamlitiaina.tragohelper.fragment.HomeFragment
 import com.teamlitiaina.tragohelper.fragment.MapFragment
 import com.teamlitiaina.tragohelper.fragment.ProfileFragment
+import com.teamlitiaina.tragohelper.fragment.RequestFragment
 
 class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallback {
 
@@ -70,6 +72,18 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
                         FragmentChanger.replaceFragment(this@MainActivity, HomeFragment(), binding.dashboardLayout.id)
                         binding.topConstraintLayout.isVisible = true
                         binding.viewMapFrameLayout.isVisible = true
+                        binding.topSpacerView.isVisible = true
+                        changeLayoutHeight(R.dimen.original_height, binding.bottomSpacerView)
+                    }
+                    true
+                }
+                R.id.navigation_current_request -> {
+                    if(currentFragment !is RequestFragment) {
+                        FragmentChanger.replaceFragment(this@MainActivity, RequestFragment(), binding.dashboardLayout.id)
+                        binding.topConstraintLayout.isVisible = false
+                        binding.viewMapFrameLayout.isVisible = true
+                        binding.topSpacerView.isVisible = false
+                        changeLayoutHeight(R.dimen.current_request_bellow_view_height, binding.bottomSpacerView)
                     }
                     true
                 }
@@ -78,6 +92,7 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
                         FragmentChanger.replaceFragment(this@MainActivity, ProfileFragment(), binding.dashboardLayout.id)
                         binding.topConstraintLayout.isVisible = false
                         binding.viewMapFrameLayout.isVisible = false
+                        binding.topSpacerView.isVisible = false
                     }
                     true
                 }
@@ -109,6 +124,13 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
             putString("longitude", data.longitude.toString())
             apply()
         }
+    }
+
+    private fun changeLayoutHeight(dimen: Int, view: View) {
+        val newHeight = resources.getDimensionPixelOffset(dimen)
+        val params = view.layoutParams
+        params.height = newHeight
+        view.layoutParams = params
     }
 
     private fun showPermissionRationaleDialog() {

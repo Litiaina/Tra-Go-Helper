@@ -21,6 +21,7 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.toolbox.JsonObjectRequest
@@ -56,6 +57,16 @@ import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.FragmentMapBinding
 import com.teamlitiaina.tragohelper.dialog.LoadingDialog
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.osmdroid.bonuspack.routing.OSRMRoadManager
+import org.osmdroid.bonuspack.routing.RoadManager
+import org.osmdroid.util.GeoPoint
+import kotlin.math.*
+
+private const val EARTH_RADIUS = 6371e3
 
 class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.FirebaseCallback {
 
@@ -69,6 +80,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     private val queue: RequestQueue by lazy {
         Volley.newRequestQueue(requireContext().applicationContext)
     }
+    private var directionsJob: Job? = null
     private var polyline: Polyline? = null
     private var destinationMarker: Marker? = null
     private var destinationName: String? = null
@@ -135,12 +147,21 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         destinationName = null
         destinationLatitude = 0.0
         destinationLongitude = 0.0
+        clearDirectionsJobs()
         mMap?.clear()
         if(Patterns.EMAIL_ADDRESS.matcher(data).matches()) {
             FirebaseObject.retrieveUserDataByEmailRealTime(data, this@MapFragment)
             FirebaseObject.retrieveLocationDataByEmailRealTime(data,this@MapFragment)
         } else {
             getDirections(data)
+        }
+    }
+
+    // can be called to clear current jobs from other fragment or activity
+    fun clearDirectionsJobs() {
+        if (directionsJob?.isActive == true) {
+            Log.d("Directions API", "Previous job is still active. Cancelling...")
+            directionsJob!!.cancel()
         }
     }
 
@@ -160,6 +181,73 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
                 }
             }, { error -> Log.e("Geocode API", "Error: ${error.message}") })
         )
+    }
+    @Deprecated("This is a directions api from google, usage is not free of charge. Use getDirectionOriginToDestination() instead.")
+    private fun updateDirections(origin: String, destination: String) {
+        if (!isAdded) {
+            return
+        }
+        queue.add(JsonObjectRequest(Request.Method.GET, "https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$destination&key=${getString(R.string.MAPS_API_KEY)}", null,
+            { response ->
+                val routes = response.getJSONArray("routes")
+                if (routes.length() > 0) {
+                    val points = ArrayList<LatLng>()
+                    val steps = routes.getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONArray("steps")
+                    for (i in 0 until steps.length()) {
+                        points.addAll(PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points")))
+                    }
+                    if (polyline == null && destinationMarker == null) {
+                        polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.parseColor("#80b3ff")).width(10f))
+                        destinationMarker = mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title(destinationName))
+                    } else {
+                        polyline?.points = points
+                        destinationMarker?.position = LatLng(destinationLatitude, destinationLongitude)
+                        destinationMarker?.title = destinationName
+                    }
+                }
+            }, { error -> Log.e("Directions API", "Error: ${error.message}") }))
+    }
+
+    private fun getDirectionOriginToDestination(originLatitude: Double, originLongitude: Double, destinationLatitude: Double, destinationLongitude: Double) {
+        if (isAdded) {
+            try {
+                directionsJob = lifecycleScope.launch(Dispatchers.Main) {
+                    val roadManager: RoadManager = OSRMRoadManager(requireContext(), "TraGoHelper")
+                    val waypoints = ArrayList<GeoPoint>()
+                    waypoints.add(GeoPoint(originLatitude, originLongitude))
+                    val endPoint = GeoPoint(destinationLatitude, destinationLongitude)
+                    waypoints.add(endPoint)
+
+                    val road = withContext(Dispatchers.IO) {
+                        roadManager.getRoad(waypoints)
+                    }
+
+                    val roadOverlay = RoadManager.buildRoadOverlay(road)
+
+                    if (polyline == null && destinationMarker == null) {
+                        polyline = mMap?.addPolyline(
+                            PolylineOptions()
+                                .addAll(roadOverlay.actualPoints.map { LatLng(it.latitude, it.longitude) })
+                                .color(Color.parseColor("#80b3ff"))
+                                .width(10f)
+                                .geodesic(true)
+                        )
+                        destinationMarker = mMap?.addMarker(
+                            MarkerOptions().position(
+                                LatLng(destinationLatitude, destinationLongitude)
+                            ).title(destinationName)
+                        )
+                    } else {
+                        polyline?.points = roadOverlay.actualPoints.map { LatLng(it.latitude, it.longitude) }
+                        destinationMarker?.position =
+                            LatLng(destinationLatitude, destinationLongitude)
+                        destinationMarker?.title = destinationName
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("Directions API", "Error: ${e.message}", e)
+            }
+        }
     }
 
     private fun getLatLngFromAddress(address: String, callback: (LatLng?) -> Unit) {
@@ -184,31 +272,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         )
     }
 
-    private fun updateDirections(origin: String, destination: String) {
-        if (!isAdded) {
-            return
-        }
-        queue.add(JsonObjectRequest(Request.Method.GET, "https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$destination&key=${getString(R.string.MAPS_API_KEY)}", null,
-        { response ->
-            val routes = response.getJSONArray("routes")
-            if (routes.length() > 0) {
-                val points = ArrayList<LatLng>()
-                val steps = routes.getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONArray("steps")
-                for (i in 0 until steps.length()) {
-                    points.addAll(PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points")))
-                }
-                if (polyline == null && destinationMarker == null) {
-                    polyline = mMap?.addPolyline(PolylineOptions().addAll(points).color(Color.parseColor("#80b3ff")).width(10f))
-                    destinationMarker = mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title(destinationName))
-                } else {
-                    polyline?.points = points
-                    destinationMarker?.position = LatLng(destinationLatitude, destinationLongitude)
-                    destinationMarker?.title = destinationName
-                }
-            }
-        }, { error -> Log.e("Directions API", "Error: ${error.message}") }))
-    }
-
+    @Deprecated("This function is deprecated. Use getDistance() instead.")
     fun getCurrentDistance(origin: String, destination: String, callback: (String?) -> Unit) {
         if (!isAdded) {
             callback(null)
@@ -229,6 +293,54 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
             }))
     }
 
+    // Use only when trying to get accurate distance in directions
+    fun getDistance(originLatitude: Double, originLongitude: Double, destinationLatitude: Double, destinationLongitude: Double, callback: (String?) -> Unit) {
+        if (isAdded) {
+            try {
+                directionsJob = lifecycleScope.launch(Dispatchers.Main) {
+                    val roadManager: RoadManager = OSRMRoadManager(requireContext(), "TraGoHelper")
+                    val waypoints = ArrayList<GeoPoint>()
+                    waypoints.add(GeoPoint(originLatitude, originLongitude))
+                    val endPoint = GeoPoint(destinationLatitude, destinationLongitude)
+                    waypoints.add(endPoint)
+                    val road = withContext(Dispatchers.IO) {
+                        roadManager.getRoad(waypoints)
+                    }
+                    callback(formatDistance(road.mLegs.sumOf { it.mLength }))
+                }
+            } catch (e: Exception) {
+                Log.e("Directions API", "Error: ${e.message}", e)
+                callback(null)
+            }
+        }
+    }
+
+    fun getDistanceHaversine(startLatitude: Double, startLongitude: Double, endLatitude: Double, endLongitude: Double, callback: (Double?) -> Unit) {
+        val phi1 = Math.toRadians(startLatitude)
+        val phi2 = Math.toRadians(endLatitude)
+        val deltaPhi = Math.toRadians(endLatitude - startLatitude)
+        val deltaLambda = Math.toRadians(endLongitude - startLongitude)
+
+        val a = sin(deltaPhi / 2) * sin(deltaPhi / 2) +
+                cos(phi1) * cos(phi2) *
+                sin(deltaLambda / 2) * sin(deltaLambda / 2)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        callback((EARTH_RADIUS * c))
+    }
+
+    fun formatDistance(distance: Double): String {
+        var value = distance
+        var unit = " m"
+        if (distance < 1) {
+            value *= 1000
+            unit = " mm"
+        } else if (distance > 1000) {
+            value /= 1000
+            unit = " km"
+        }
+        return String.format("%.1f%s", value, unit)
+    }
+
     private fun initializeLocationCallback() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
@@ -245,12 +357,23 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
             binding.loadingLocationLinearLayout.isVisible = false
             MainActivity.currentUserLongitude = currentLocation!!.latitude.toString()
             MainActivity.currentUserLongitude = currentLocation!!.longitude.toString()
-            updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}")
-            getCurrentDistance("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}") {distance ->
-                if(distance != null) {
-                    binding.distanceTextView.text = distance
+            if(destinationLatitude != 0.0 && destinationLongitude != 0.0) {
+                getDirectionOriginToDestination(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude, destinationLongitude)
+            }
+            getDistanceHaversine(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
+                if (distance != null) {
+                    if (destinationLatitude != 0.0 && destinationLongitude != 0.0) {
+                        binding.distanceTextView.text = formatDistance(distance)
+                    }
                 }
             }
+//            --- Usage will increase cpu but will get accurate distance
+//            getDistance(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
+//                if(distance != null) {
+//                    binding.distanceTextView.text = distance
+//                }
+//            }
+//            ---
             updateMapStyle()
             FirebaseObject.database.getReference("vehicleOwnerLocation").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
                 LocationData(FirebaseObject.auth.currentUser?.uid.toString(),MainActivity.currentUser?.email.toString(),currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
@@ -290,14 +413,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
 
     private fun updateMapStyle() {
         mMap?.let { googleMap ->
-            if (getCurrentTime() in 6..17) {
-                googleMap.setMapStyle(
-                    MapStyleOptions.loadRawResourceStyle(
-                        requireContext(),
-                        R.raw.retro_theme_map_style
-                    )
-                )
-            } else {
+            if (getCurrentTime() !in 6..17) {
                 googleMap.setMapStyle(
                     MapStyleOptions.loadRawResourceStyle(
                         requireContext(),
@@ -367,12 +483,23 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
             MainActivity.currentUserLongitude = currentLocation!!.longitude.toString()
             destinationLatitude = data.latitude.toString().toDouble()
             destinationLongitude = data.longitude.toString().toDouble()
-            updateDirections("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}")
-            getCurrentDistance("${currentLocation!!.latitude},${currentLocation!!.longitude}","${destinationLatitude},${destinationLongitude}") { distance ->
-                if(distance != null) {
-                    binding.distanceTextView.text = distance
+            if(destinationLatitude != 0.0 && destinationLongitude != 0.0) {
+                getDirectionOriginToDestination(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude, destinationLongitude)
+            }
+            getDistanceHaversine(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
+                if (distance != null) {
+                    if (destinationLatitude != 0.0 && destinationLongitude != 0.0) {
+                        binding.distanceTextView.text = formatDistance(distance)
+                    }
                 }
             }
+//            --- Usage will increase cpu but will get accurate distance
+//            getDistance(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
+//                if(distance != null) {
+//                    binding.distanceTextView.text = distance
+//                }
+//            }
+//            ---
         } else {
             Log.e("Update Location", "Current location is null or fragment not attached or auth is null.")
         }

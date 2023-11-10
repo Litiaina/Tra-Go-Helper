@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Tra Go Helper</string>
-    <string name="MAPS_API_KEY">AIzaSyBNKZo96e8T4FpfovK5yD1hWkePYE7XT0o</string>
+    <string name="MAPS_API_KEY">AIzaSyAZNytfQ7AIyGd12zHfAYKp-sWzOR2IzA8</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

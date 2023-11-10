@@ -44,7 +44,7 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <View
-        android:id="@+id/spacer_view"
+        android:id="@+id/top_spacer_view"
         android:layout_width="match_parent"
         android:layout_height="140dp"
         android:layout_below="@id/top_constraint_layout"/>
@@ -53,8 +53,8 @@
         android:id="@+id/view_map_frame_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/spacer_view"
-        android:layout_above="@id/navigation_bar_bottom_navigation_view"/>
+        android:layout_below="@id/top_spacer_view"
+        android:layout_above="@id/bottom_spacer_view"/>
 
     <FrameLayout
         android:id="@+id/dashboard_layout"
@@ -63,13 +63,18 @@
         android:layout_below="@id/top_constraint_layout"
         android:layout_above="@id/navigation_bar_bottom_navigation_view"/>
 
+    <View
+        android:id="@+id/bottom_spacer_view"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true" />
+
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/navigation_bar_bottom_navigation_view"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="50dp"
         android:layout_alignParentBottom="true"
         android:layout_marginStart="10dp"
-        android:layout_marginTop="10dp"
         android:layout_marginEnd="10dp"
         android:layout_marginBottom="10dp"
         android:background="@drawable/custom_buttom_solid_black_background"

@@ -33,7 +33,6 @@ class ProfileFragment : Fragment() {
             startActivity(Intent(requireContext(), LoginActivity::class.java))
             requireActivity().finish()
         }
-
     }
 
     override fun onDestroyView() {
