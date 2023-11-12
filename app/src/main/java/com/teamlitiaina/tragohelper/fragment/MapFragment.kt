@@ -69,7 +69,7 @@ import org.osmdroid.bonuspack.routing.RoadManager
 import org.osmdroid.util.GeoPoint
 import kotlin.math.*
 
-class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener,FirebaseObject.Companion.FirebaseCallback {
+class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, FirebaseObject.Companion.FirebaseCallback {
 
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
