@@ -6,6 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.teamlitiaina.tragohelper.databinding.FragmentRequestBinding
+import com.teamlitiaina.tragohelper.dialog.LoadingDialog
+import com.teamlitiaina.tragohelper.dialog.RequestInformationDialog
 
 class RequestFragment : Fragment() {
 
@@ -23,6 +25,12 @@ class RequestFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        binding.topConstraintLayout.setOnClickListener {
+            val requestInformationDialog = RequestInformationDialog()
+            requestInformationDialog.show(parentFragmentManager, "Information")
+        }
+
     }
 
     override fun onDestroyView() {

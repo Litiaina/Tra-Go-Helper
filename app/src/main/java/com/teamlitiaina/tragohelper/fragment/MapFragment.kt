@@ -87,10 +87,11 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener,Firebase
     private var destinationName: String? = null
     private var destinationLatitude: Double = 0.0
     private var destinationLongitude: Double = 0.0
-    private var isFollowingCamera = false
     private lateinit var sensorManager: SensorManager
     private var loadingDialog: LoadingDialog? = null
     private var cancelDirectionsUpdate = false
+    private var followDirectionCamera = false
+    private var isFollowingCamera = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
@@ -109,9 +110,14 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener,Firebase
         sensorManager = requireActivity().getSystemService(SENSOR_SERVICE) as SensorManager
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_NORMAL)
         binding.clearDestinationImageButton.isVisible = false
+        binding.followDirectionCameraCardView.isVisible = false
 
-        binding.cameraSwtich.setOnCheckedChangeListener { _, isChecked ->
+        binding.cameraSwitch.setOnCheckedChangeListener { _, isChecked ->
             isFollowingCamera = isChecked
+        }
+
+        binding.followDirectionCameraSwitch.setOnCheckedChangeListener { _, isChecked ->
+            followDirectionCamera = isChecked
         }
 
         binding.myLocationImageButton.setOnClickListener {
@@ -123,9 +129,11 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener,Firebase
         }
 
         binding.clearDestinationImageButton.setOnClickListener {
-            binding.cameraSwtich.isClickable = true
-            cancelDirections()
+            binding.cameraCardView.isVisible = true
             binding.clearDestinationImageButton.isVisible = false
+            binding.followDirectionCameraCardView.isVisible = false
+            binding.clearDestinationImageButton.isVisible = false
+            cancelDirections()
         }
 
     }
@@ -153,9 +161,11 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener,Firebase
 
     fun setDestinationRoute(data: String) {
         cancelDirections()
-        binding.cameraSwtich.isChecked = false
-        binding.cameraSwtich.isClickable = false
+        binding.cameraSwitch.isChecked = false
+        binding.cameraCardView.isVisible = false
         binding.clearDestinationImageButton.isVisible = true
+        binding.followDirectionCameraCardView.isVisible = true
+        binding.followDirectionCameraSwitch.isChecked = true
         cancelDirectionsUpdate = false
         if(Patterns.EMAIL_ADDRESS.matcher(data).matches()) {
             FirebaseObject.retrieveUserDataByEmailRealTime(data, this@MapFragment)
@@ -264,21 +274,23 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener,Firebase
                         destinationMarker?.title = destinationName
                     }
 
-                    val firstSegmentBearing = calculateBearing(
-                        LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude),
-                        LatLng(roadOverlay.actualPoints[1].latitude, roadOverlay.actualPoints[1].longitude)
-                    )
-
-                    mMap?.animateCamera(
-                        CameraUpdateFactory.newCameraPosition(
-                            CameraPosition.Builder()
-                                .target(LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude))
-                                .zoom(18.5f)
-                                .bearing(firstSegmentBearing)
-                                .tilt(30f)
-                                .build()
+                    if(followDirectionCamera) {
+                        val firstSegmentBearing = calculateBearing(
+                            LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude),
+                            LatLng(roadOverlay.actualPoints[1].latitude, roadOverlay.actualPoints[1].longitude)
                         )
-                    )
+                        mMap?.animateCamera(
+                            CameraUpdateFactory.newCameraPosition(
+                                CameraPosition.Builder()
+                                    .target(LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude))
+                                    .zoom(18.5f)
+                                    .bearing(firstSegmentBearing)
+                                    .tilt(30f)
+                                    .build()
+                            )
+                        )
+                    }
+
                 }
             } catch (e: Exception) {
                 Log.e("Directions API", "Error: ${e.message}", e)
