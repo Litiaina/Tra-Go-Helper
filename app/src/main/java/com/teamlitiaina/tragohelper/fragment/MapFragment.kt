@@ -90,8 +90,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     private lateinit var sensorManager: SensorManager
     private var loadingDialog: LoadingDialog? = null
     private var cancelDirectionsUpdate = false
-    private var followDirectionCamera = false
     private var isFollowingCamera = false
+    private var followDirectionCamera = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
