@@ -3,4 +3,5 @@
     <string name="MAPS_API_KEY">AIzaSyAZNytfQ7AIyGd12zHfAYKp-sWzOR2IzA8</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="default_current_distance_value">0 m</string>
 </resources>

@@ -10,6 +10,8 @@ import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ItemLayoutSelectServiceBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
+import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.formatDistance
+import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.getDistanceHaversine
 
 class SelectServiceAdapter(private val dataArray: List<UserData>, private val activity: Activity) : RecyclerView.Adapter<SelectServiceAdapter.ViewHolder>() {
 
@@ -36,7 +38,7 @@ class SelectServiceAdapter(private val dataArray: List<UserData>, private val ac
             if (MainActivity.currentUser?.email == currentItem.email) {
                 Toast.makeText(activity, "Current User", Toast.LENGTH_SHORT).show()
             } else {
-                MainActivity.mapFragment?.updateData(currentItem.email.toString())
+                MainActivity.mapFragment?.setDestinationRoute(currentItem.email.toString())
             }
         }
         FirebaseObject.retrieveLocationDataByEmailRealTime(currentItem.email.toString(), object : FirebaseObject.Companion.FirebaseCallback {
@@ -44,15 +46,15 @@ class SelectServiceAdapter(private val dataArray: List<UserData>, private val ac
 
             override fun onLocationDataReceived(data: LocationData) {
                 if (MainActivity.currentUserLatitude != null && MainActivity.currentUserLongitude != null) {
-                    MainActivity.mapFragment?.getDistanceHaversine(
+                    getDistanceHaversine(
                         MainActivity.currentUserLatitude!!.toDouble(),
                         MainActivity.currentUserLongitude!!.toDouble(),
                         data.latitude!!.toDouble(),
                         data.longitude!!.toDouble()
                     ) { distance ->
                         if (distance != null && holder.currentData?.email == currentItem.email) {
-                            MainActivity.mapFragment?.formatDistance(distance)
-                                ?.let {
+                            formatDistance(distance)
+                                .let {
                                     dataReceivedListener?.onDataReceived(
                                         it,
                                         holder.adapterPosition

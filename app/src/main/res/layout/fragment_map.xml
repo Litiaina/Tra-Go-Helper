@@ -72,15 +72,15 @@
                     android:layout_gravity="center"
                     android:layout_marginStart="10dp"
                     android:layout_marginEnd="5dp"
-                    android:text="0m"
+                    android:text="@string/default_current_distance_value"
                     android:textColor="@color/dark_green" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
         <ImageButton
             android:id="@+id/my_location_image_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:layout_alignParentEnd="true"
             android:layout_marginTop="5dp"
             android:layout_marginBottom="5dp"
@@ -89,6 +89,22 @@
             android:backgroundTint="@color/white"
             android:src="@drawable/baseline_my_location"
             tools:ignore="ContentDescription" />
+
+        <ImageButton
+            android:id="@+id/clear_destination_image_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentStart="true"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="2dp"
+            android:backgroundTint="@color/white"
+            android:scaleType="fitCenter"
+            android:src="@drawable/baseline_clear_destination"
+            android:layout_below="@id/camera_card_view"
+            tools:ignore="ContentDescription" />
+
     </RelativeLayout>
 
     <ImageView
@@ -107,7 +123,6 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:orientation="horizontal"
-        android:layout_marginEnd="5dp"
         android:layout_marginBottom="31dp">
 
         <com.github.ybq.android.spinkit.SpinKitView

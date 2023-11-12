@@ -36,7 +36,7 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
                     if (MainActivity.currentUser?.email == it) {
                         Toast.makeText(activity, "Current User", Toast.LENGTH_SHORT).show()
                     } else {
-                        MainActivity.mapFragment?.updateData(it)
+                        MainActivity.mapFragment?.setDestinationRoute(it)
                     }
                 }
                 return false

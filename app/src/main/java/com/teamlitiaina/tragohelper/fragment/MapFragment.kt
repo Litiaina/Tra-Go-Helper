@@ -57,6 +57,9 @@ import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.FragmentMapBinding
 import com.teamlitiaina.tragohelper.dialog.LoadingDialog
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
+import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.calculateBearing
+import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.formatDistance
+import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.getDistanceHaversine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -66,9 +69,7 @@ import org.osmdroid.bonuspack.routing.RoadManager
 import org.osmdroid.util.GeoPoint
 import kotlin.math.*
 
-private const val EARTH_RADIUS = 6371e3
-
-class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.FirebaseCallback {
+class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener,FirebaseObject.Companion.FirebaseCallback {
 
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
@@ -89,6 +90,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     private var isFollowingCamera = false
     private lateinit var sensorManager: SensorManager
     private var loadingDialog: LoadingDialog? = null
+    private var cancelDirectionsUpdate = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
@@ -105,7 +107,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         initializeLocationCallback()
         getLastLocation()
         sensorManager = requireActivity().getSystemService(SENSOR_SERVICE) as SensorManager
-        sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_NORMAL)
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_NORMAL)
+        binding.clearDestinationImageButton.isVisible = false
 
         binding.cameraSwtich.setOnCheckedChangeListener { _, isChecked ->
             isFollowingCamera = isChecked
@@ -118,6 +121,13 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
                 .tilt(0f)
                 .build()))
         }
+
+        binding.clearDestinationImageButton.setOnClickListener {
+            binding.cameraSwtich.isClickable = true
+            cancelDirections()
+            binding.clearDestinationImageButton.isVisible = false
+        }
+
     }
 
     private fun createLocationRequest() {
@@ -141,14 +151,12 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         }
     }
 
-    fun updateData(data: String) {
-        polyline = null
-        destinationMarker = null
-        destinationName = null
-        destinationLatitude = 0.0
-        destinationLongitude = 0.0
-        clearDirectionsJobs()
-        mMap?.clear()
+    fun setDestinationRoute(data: String) {
+        cancelDirections()
+        binding.cameraSwtich.isChecked = false
+        binding.cameraSwtich.isClickable = false
+        binding.clearDestinationImageButton.isVisible = true
+        cancelDirectionsUpdate = false
         if(Patterns.EMAIL_ADDRESS.matcher(data).matches()) {
             FirebaseObject.retrieveUserDataByEmailRealTime(data, this@MapFragment)
             FirebaseObject.retrieveLocationDataByEmailRealTime(data,this@MapFragment)
@@ -157,12 +165,24 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         }
     }
 
-    // can be called to clear current jobs from other fragment or activity
-    fun clearDirectionsJobs() {
+    private fun clearDirectionsJobs() {
         if (directionsJob?.isActive == true) {
             Log.d("Directions API", "Previous job is still active. Cancelling...")
             directionsJob!!.cancel()
         }
+    }
+
+    private fun cancelDirections() {
+        cancelDirectionsUpdate = true
+        polyline?.remove()
+        destinationMarker?.remove()
+        polyline = null
+        destinationMarker = null
+        destinationName = null
+        destinationLatitude = 0.0
+        destinationLongitude = 0.0
+        binding.distanceTextView.text = "0 m"
+        clearDirectionsJobs()
     }
 
     private fun getDirections(address: String) {
@@ -243,6 +263,22 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
                             LatLng(destinationLatitude, destinationLongitude)
                         destinationMarker?.title = destinationName
                     }
+
+                    val firstSegmentBearing = calculateBearing(
+                        LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude),
+                        LatLng(roadOverlay.actualPoints[1].latitude, roadOverlay.actualPoints[1].longitude)
+                    )
+
+                    mMap?.animateCamera(
+                        CameraUpdateFactory.newCameraPosition(
+                            CameraPosition.Builder()
+                                .target(LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude))
+                                .zoom(18.5f)
+                                .bearing(firstSegmentBearing)
+                                .tilt(30f)
+                                .build()
+                        )
+                    )
                 }
             } catch (e: Exception) {
                 Log.e("Directions API", "Error: ${e.message}", e)
@@ -294,7 +330,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
     }
 
     // Use only when trying to get accurate distance in directions
-    fun getDistance(originLatitude: Double, originLongitude: Double, destinationLatitude: Double, destinationLongitude: Double, callback: (String?) -> Unit) {
+     fun getDistance(originLatitude: Double, originLongitude: Double, destinationLatitude: Double, destinationLongitude: Double, callback: (String?) -> Unit) {
         if (isAdded) {
             try {
                 directionsJob = lifecycleScope.launch(Dispatchers.Main) {
@@ -315,32 +351,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         }
     }
 
-    fun getDistanceHaversine(startLatitude: Double, startLongitude: Double, endLatitude: Double, endLongitude: Double, callback: (Double?) -> Unit) {
-        val phi1 = Math.toRadians(startLatitude)
-        val phi2 = Math.toRadians(endLatitude)
-        val deltaPhi = Math.toRadians(endLatitude - startLatitude)
-        val deltaLambda = Math.toRadians(endLongitude - startLongitude)
-
-        val a = sin(deltaPhi / 2) * sin(deltaPhi / 2) +
-                cos(phi1) * cos(phi2) *
-                sin(deltaLambda / 2) * sin(deltaLambda / 2)
-        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        callback((EARTH_RADIUS * c))
-    }
-
-    fun formatDistance(distance: Double): String {
-        var value = distance
-        var unit = " m"
-        if (distance < 1) {
-            value *= 1000
-            unit = " mm"
-        } else if (distance > 1000) {
-            value /= 1000
-            unit = " km"
-        }
-        return String.format("%.1f%s", value, unit)
-    }
-
     private fun initializeLocationCallback() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
@@ -357,16 +367,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
             binding.loadingLocationLinearLayout.isVisible = false
             MainActivity.currentUserLongitude = currentLocation!!.latitude.toString()
             MainActivity.currentUserLongitude = currentLocation!!.longitude.toString()
-            if(destinationLatitude != 0.0 && destinationLongitude != 0.0) {
-                getDirectionOriginToDestination(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude, destinationLongitude)
-            }
-            getDistanceHaversine(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
-                if (distance != null) {
-                    if (destinationLatitude != 0.0 && destinationLongitude != 0.0) {
-                        binding.distanceTextView.text = formatDistance(distance)
-                    }
-                }
-            }
+            updateMapDirections()
 //            --- Usage will increase cpu but will get accurate distance
 //            getDistance(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
 //                if(distance != null) {
@@ -420,6 +421,21 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
                         R.raw.night_theme_map_style
                     )
                 )
+            }
+        }
+    }
+
+    private fun updateMapDirections() {
+        if (!cancelDirectionsUpdate) {
+            if(destinationLatitude != 0.0 && destinationLongitude != 0.0) {
+                getDirectionOriginToDestination(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude, destinationLongitude)
+            }
+            getDistanceHaversine(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
+                if (distance != null) {
+                    if (destinationLatitude != 0.0 && destinationLongitude != 0.0) {
+                        binding.distanceTextView.text = formatDistance(distance)
+                    }
+                }
             }
         }
     }
@@ -483,16 +499,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
             MainActivity.currentUserLongitude = currentLocation!!.longitude.toString()
             destinationLatitude = data.latitude.toString().toDouble()
             destinationLongitude = data.longitude.toString().toDouble()
-            if(destinationLatitude != 0.0 && destinationLongitude != 0.0) {
-                getDirectionOriginToDestination(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude, destinationLongitude)
-            }
-            getDistanceHaversine(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
-                if (distance != null) {
-                    if (destinationLatitude != 0.0 && destinationLongitude != 0.0) {
-                        binding.distanceTextView.text = formatDistance(distance)
-                    }
-                }
-            }
+            updateMapDirections()
 //            --- Usage will increase cpu but will get accurate distance
 //            getDistance(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
 //                if(distance != null) {
@@ -505,54 +512,65 @@ class MapFragment : Fragment(), OnMapReadyCallback, FirebaseObject.Companion.Fir
         }
     }
 
-    private val sensorListener = object : SensorEventListener {
-        override fun onSensorChanged(event: SensorEvent) {
-            if (currentLocation != null && mMap != null) {
-                if (isFollowingCamera) {
-                    val rotationMatrix = FloatArray(9)
-                    SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+    override fun onSensorChanged(p0: SensorEvent?) {
+        if (currentLocation != null && mMap != null) {
+            if (isFollowingCamera) {
+                val rotationMatrix = FloatArray(9)
+                SensorManager.getRotationMatrixFromVector(rotationMatrix, p0?.values)
 
-                    val orientationValues = FloatArray(3)
-                    SensorManager.getOrientation(rotationMatrix, orientationValues)
+                val orientationValues = FloatArray(3)
+                SensorManager.getOrientation(rotationMatrix, orientationValues)
 
-                    mMap?.animateCamera(
-                        CameraUpdateFactory.newCameraPosition(
-                            CameraPosition.Builder()
-                                .target(LatLng(currentLocation!!.latitude, currentLocation!!.longitude))
-                                .zoom(19.5f)
-                                .bearing(Math.toDegrees(orientationValues[0].toDouble()).toFloat())
-                                .tilt(30f)
-                                .build()
-                        )
+                mMap?.animateCamera(
+                    CameraUpdateFactory.newCameraPosition(
+                        CameraPosition.Builder()
+                            .target(LatLng(currentLocation!!.latitude, currentLocation!!.longitude))
+                            .zoom(19.5f)
+                            .bearing(Math.toDegrees(orientationValues[0].toDouble()).toFloat())
+                            .tilt(30f)
+                            .build()
                     )
-                }
+                )
             }
         }
-
-        override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
     }
+
+    override fun onAccuracyChanged(p0: Sensor?, p1: Int) {}
 
     override fun onResume() {
         super.onResume()
-        sensorManager.registerListener(sensorListener, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_NORMAL)
+        registerListeners()
         startLocationUpdates()
     }
 
     override fun onPause() {
         super.onPause()
-        sensorManager.unregisterListener(sensorListener)
+        unregisterListeners()
         stopLocationUpdates()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        queue.cancelAll(this)
+        cleanUp()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        sensorManager.unregisterListener(sensorListener)
-        fusedLocationProviderClient.removeLocationUpdates(locationCallback)
+        cleanUp()
         _binding = null
     }
+
+    private fun registerListeners() {
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_NORMAL)
+    }
+
+    private fun unregisterListeners() {
+        sensorManager.unregisterListener(this)
+    }
+
+    private fun cleanUp() {
+        queue.cancelAll(this)
+        clearDirectionsJobs()
+    }
+
 }

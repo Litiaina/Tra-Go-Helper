@@ -117,8 +117,6 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
     }
 
     override fun onLocationDataReceived(data: LocationData) {
-        currentUserLatitude = data.latitude.toString()
-        currentUserLongitude = data.longitude.toString()
         with(sharedPreferences.edit()) {
             putString("latitude", data.latitude.toString())
             putString("longitude", data.longitude.toString())
