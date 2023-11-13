@@ -18,6 +18,7 @@ import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -251,61 +252,72 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     }
 
     private fun getDirectionOriginToDestination(originLatitude: Double, originLongitude: Double, destinationLatitude: Double, destinationLongitude: Double) {
-        if (isAdded) {
-            if (Validation.isInternetAvailable(requireContext())) {
-                try {
-                    directionsJob = lifecycleScope.launch(Dispatchers.Main) {
-                        val roadManager: RoadManager = OSRMRoadManager(requireContext(), "TraGoHelper")
-                        val waypoints = ArrayList<GeoPoint>()
-                        waypoints.add(GeoPoint(originLatitude, originLongitude))
-                        val endPoint = GeoPoint(destinationLatitude, destinationLongitude)
-                        waypoints.add(endPoint)
-
-                        val road = withContext(Dispatchers.IO) {
-                            roadManager.getRoad(waypoints)
-                        }
-
-                        val roadOverlay = RoadManager.buildRoadOverlay(road)
-
-                        if (polyline == null) {
-                            polyline = mMap?.addPolyline(
-                                PolylineOptions()
-                                    .addAll(roadOverlay.actualPoints.map { LatLng(it.latitude, it.longitude) })
-                                    .color(Color.parseColor("#80b3ff"))
-                                    .width((7f * resources.displayMetrics.density))
-                                    .geodesic(true)
-                            )
-                        } else {
-                            polyline?.points = roadOverlay.actualPoints.map { LatLng(it.latitude, it.longitude) }
-                            destinationMarker?.position =
-                                LatLng(destinationLatitude, destinationLongitude)
-                        }
-
-                        if(followDirectionCamera) {
-                            val firstSegmentBearing = calculateBearing(
-                                LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude),
-                                LatLng(roadOverlay.actualPoints[1].latitude, roadOverlay.actualPoints[1].longitude)
-                            )
-                            mMap?.animateCamera(
-                                CameraUpdateFactory.newCameraPosition(
-                                    CameraPosition.Builder()
-                                        .target(LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude))
-                                        .zoom(18.5f)
-                                        .bearing(firstSegmentBearing)
-                                        .tilt(30f)
-                                        .build()
-                                )
-                            )
-                        }
-
-                    }
-                } catch (e: Exception) {
-                    Log.e("Directions API", "Error: ${e.message}", e)
-                }
-            } else {
-                Log.e("Network", "No internet connection")
-            }
+        if (!isAdded) {
+            return
         }
+        if (!Validation.isInternetAvailable(requireContext())) {
+            Log.e("Network", "No internet connection")
+            cancelDirections()
+            return
+        }
+        try {
+            directionsJob = lifecycleScope.launch(Dispatchers.Main) {
+                val roadManager: RoadManager = OSRMRoadManager(requireContext(), "TraGoHelper")
+                val waypoints = ArrayList<GeoPoint>()
+                waypoints.add(GeoPoint(originLatitude, originLongitude))
+                val endPoint = GeoPoint(destinationLatitude, destinationLongitude)
+                waypoints.add(endPoint)
+
+                val road = withContext(Dispatchers.IO) {
+                    roadManager.getRoad(waypoints)
+                }
+
+                val roadOverlay = RoadManager.buildRoadOverlay(road)
+
+                val newPoints = roadOverlay.actualPoints.map { LatLng(it.latitude, it.longitude) }
+
+                if (polyline == null) {
+                    polyline = mMap?.addPolyline(
+                        PolylineOptions()
+                            .addAll(newPoints)
+                            .color(Color.parseColor("#80b3ff"))
+                            .width((7f * resources.displayMetrics.density))
+                            .geodesic(true)
+                    )
+                } else {
+                    if (!arePolyLinesEqual(newPoints, polyline?.points)) {
+                        polyline?.points = newPoints
+                    }
+                    destinationMarker?.position = LatLng(destinationLatitude, destinationLongitude)
+                }
+
+                if (followDirectionCamera) {
+                    val firstSegmentBearing = calculateBearing(
+                        LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude),
+                        LatLng(roadOverlay.actualPoints[1].latitude, roadOverlay.actualPoints[1].longitude)
+                    )
+                    mMap?.animateCamera(
+                        CameraUpdateFactory.newCameraPosition(
+                            CameraPosition.Builder()
+                                .target(LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude))
+                                .zoom(18.5f)
+                                .bearing(firstSegmentBearing)
+                                .tilt(30f)
+                                .build()
+                        )
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Directions API", "Error: ${e.message}", e)
+        }
+    }
+
+    private fun arePolyLinesEqual(polyline1: List<LatLng>?, polyline2: List<LatLng>?): Boolean {
+        val polyline1Pairs = polyline1?.map { it.latitude to it.longitude }
+        val polyline2Pairs = polyline2?.map { it.latitude to it.longitude }
+
+        return polyline1Pairs?.toTypedArray()?.contentDeepEquals(polyline2Pairs?.toTypedArray() ?: emptyArray()) == true
     }
 
     private fun getLatLngFromAddress(address: String, callback: (LatLng?) -> Unit) {
