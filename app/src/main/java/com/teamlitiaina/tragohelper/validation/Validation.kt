@@ -1,8 +1,11 @@
 package com.teamlitiaina.tragohelper.validation
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.util.Patterns
 import android.widget.Toast
+import androidx.core.content.ContentProviderCompat.requireContext
 
 class Validation {
     companion object {
@@ -39,5 +42,12 @@ class Validation {
             }
             return false
         }
+        fun isInternetAvailable(context: Context): Boolean {
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val network = connectivityManager.activeNetwork
+            val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
+            return networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+        }
+
     }
 }

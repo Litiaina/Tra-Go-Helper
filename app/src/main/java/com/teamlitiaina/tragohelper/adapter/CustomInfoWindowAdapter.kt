@@ -1,8 +1,12 @@
 package com.teamlitiaina.tragohelper.adapter
 
 import android.content.Context
+import android.graphics.Color
+import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.LinearLayout
+import android.widget.TextView
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.Marker
 import com.teamlitiaina.tragohelper.databinding.CustomInfoWindowServiceProviderBinding

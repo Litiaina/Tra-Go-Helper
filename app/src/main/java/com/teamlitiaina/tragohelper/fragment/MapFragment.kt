@@ -62,6 +62,7 @@ import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.calculateBearing
 import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.formatDistance
 import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.getDistanceHaversine
+import com.teamlitiaina.tragohelper.validation.Validation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -251,62 +252,58 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
 
     private fun getDirectionOriginToDestination(originLatitude: Double, originLongitude: Double, destinationLatitude: Double, destinationLongitude: Double) {
         if (isAdded) {
-            try {
-                directionsJob = lifecycleScope.launch(Dispatchers.Main) {
-                    val roadManager: RoadManager = OSRMRoadManager(requireContext(), "TraGoHelper")
-                    val waypoints = ArrayList<GeoPoint>()
-                    waypoints.add(GeoPoint(originLatitude, originLongitude))
-                    val endPoint = GeoPoint(destinationLatitude, destinationLongitude)
-                    waypoints.add(endPoint)
+            if (Validation.isInternetAvailable(requireContext())) {
+                try {
+                    directionsJob = lifecycleScope.launch(Dispatchers.Main) {
+                        val roadManager: RoadManager = OSRMRoadManager(requireContext(), "TraGoHelper")
+                        val waypoints = ArrayList<GeoPoint>()
+                        waypoints.add(GeoPoint(originLatitude, originLongitude))
+                        val endPoint = GeoPoint(destinationLatitude, destinationLongitude)
+                        waypoints.add(endPoint)
 
-                    val road = withContext(Dispatchers.IO) {
-                        roadManager.getRoad(waypoints)
-                    }
+                        val road = withContext(Dispatchers.IO) {
+                            roadManager.getRoad(waypoints)
+                        }
 
-                    val roadOverlay = RoadManager.buildRoadOverlay(road)
+                        val roadOverlay = RoadManager.buildRoadOverlay(road)
 
-                    if (polyline == null) {
-                        polyline = mMap?.addPolyline(
-                            PolylineOptions()
-                                .addAll(roadOverlay.actualPoints.map { LatLng(it.latitude, it.longitude) })
-                                .color(Color.parseColor("#80b3ff"))
-                                .width(10f)
-                                .geodesic(true)
-                        )
-//                        if(emailMarkerMap != destinationMarker) {
-//                            destinationMarker = mMap?.addMarker(
-//                                MarkerOptions().position(
-//                                    LatLng(destinationLatitude, destinationLongitude)
-//                                ).title(destinationName)
-//                            )
-//                        }
-                    } else {
-                        polyline?.points = roadOverlay.actualPoints.map { LatLng(it.latitude, it.longitude) }
-                        destinationMarker?.position =
-                            LatLng(destinationLatitude, destinationLongitude)
-//                        destinationMarker?.title = destinationName
-                    }
-
-                    if(followDirectionCamera) {
-                        val firstSegmentBearing = calculateBearing(
-                            LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude),
-                            LatLng(roadOverlay.actualPoints[1].latitude, roadOverlay.actualPoints[1].longitude)
-                        )
-                        mMap?.animateCamera(
-                            CameraUpdateFactory.newCameraPosition(
-                                CameraPosition.Builder()
-                                    .target(LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude))
-                                    .zoom(18.5f)
-                                    .bearing(firstSegmentBearing)
-                                    .tilt(30f)
-                                    .build()
+                        if (polyline == null) {
+                            polyline = mMap?.addPolyline(
+                                PolylineOptions()
+                                    .addAll(roadOverlay.actualPoints.map { LatLng(it.latitude, it.longitude) })
+                                    .color(Color.parseColor("#80b3ff"))
+                                    .width((7f * resources.displayMetrics.density))
+                                    .geodesic(true)
                             )
-                        )
-                    }
+                        } else {
+                            polyline?.points = roadOverlay.actualPoints.map { LatLng(it.latitude, it.longitude) }
+                            destinationMarker?.position =
+                                LatLng(destinationLatitude, destinationLongitude)
+                        }
 
+                        if(followDirectionCamera) {
+                            val firstSegmentBearing = calculateBearing(
+                                LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude),
+                                LatLng(roadOverlay.actualPoints[1].latitude, roadOverlay.actualPoints[1].longitude)
+                            )
+                            mMap?.animateCamera(
+                                CameraUpdateFactory.newCameraPosition(
+                                    CameraPosition.Builder()
+                                        .target(LatLng(roadOverlay.actualPoints[0].latitude, roadOverlay.actualPoints[0].longitude))
+                                        .zoom(18.5f)
+                                        .bearing(firstSegmentBearing)
+                                        .tilt(30f)
+                                        .build()
+                                )
+                            )
+                        }
+
+                    }
+                } catch (e: Exception) {
+                    Log.e("Directions API", "Error: ${e.message}", e)
                 }
-            } catch (e: Exception) {
-                Log.e("Directions API", "Error: ${e.message}", e)
+            } else {
+                Log.e("Network", "No internet connection")
             }
         }
     }
@@ -491,40 +488,42 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         if (userData.isEmpty() || locationData.isEmpty()) {
             return
         }
-        for (index in 0 until min(userData.size, locationData.size)) {
-            val name = userData[index].name.toString()
-            val existingMarker = emailMarkerMap[locationData[index].email]
+        if (isAdded) {
+            for (index in 0 until min(userData.size, locationData.size)) {
+                val name = userData[index].name.toString()
+                val existingMarker = emailMarkerMap[locationData[index].email]
 
-            if (existingMarker != null) {
-                existingMarker.position = LatLng(locationData[index].latitude!!.toDouble(), locationData[index].longitude!!.toDouble())
-            } else {
-                if (name == MainActivity.currentUser?.name){
-                    continue
+                if (existingMarker != null) {
+                    existingMarker.position = LatLng(locationData[index].latitude!!.toDouble(), locationData[index].longitude!!.toDouble())
                 } else {
-                    val newMarker = mMap?.addMarker(MarkerOptions().position(LatLng(locationData[index].latitude!!.toDouble(), locationData[index].longitude!!.toDouble())).title(name).icon(
-                        BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(resources, org.osmdroid.library.R.drawable.person))))
-                    newMarker?.let { marker ->
-                        emailMarkerMap[locationData[index].email.toString()] = marker
+                    if (name == MainActivity.currentUser?.name){
+                        continue
+                    } else {
+                        val newMarker = mMap?.addMarker(MarkerOptions().position(LatLng(locationData[index].latitude!!.toDouble(), locationData[index].longitude!!.toDouble())).title(name).icon(
+                            BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(resources, org.osmdroid.library.R.drawable.person))))
+                        newMarker?.let { marker ->
+                            emailMarkerMap[locationData[index].email.toString()] = marker
+                        }
                     }
                 }
             }
-        }
-        mMap?.setInfoWindowAdapter(CustomInfoWindowAdapter(requireContext()))
-        mMap?.setOnInfoWindowClickListener { clickedMarker ->
-            emailMarkerMap.forEach { (email, marker) ->
-                if (clickedMarker == marker) {
-                    setDestinationRoute(email)
+            mMap?.setInfoWindowAdapter(CustomInfoWindowAdapter(requireContext()))
+            mMap?.setOnInfoWindowClickListener { clickedMarker ->
+                emailMarkerMap.forEach { (email, marker) ->
+                    if (clickedMarker == marker) {
+                        setDestinationRoute(email)
+                    }
                 }
             }
-        }
-        mMap?.setOnMarkerClickListener { clickedMarker ->
-            emailMarkerMap.forEach { (_, marker) ->
-                if (clickedMarker == marker) {
-                    marker.showInfoWindow()
-                    return@setOnMarkerClickListener true
+            mMap?.setOnMarkerClickListener { clickedMarker ->
+                emailMarkerMap.forEach { (_, marker) ->
+                    if (clickedMarker == marker) {
+                        marker.showInfoWindow()
+                        return@setOnMarkerClickListener true
+                    }
                 }
+                false
             }
-            false
         }
     }
 
