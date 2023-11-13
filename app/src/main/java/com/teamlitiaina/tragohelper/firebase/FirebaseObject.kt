@@ -17,6 +17,7 @@ class FirebaseObject {
             fun onUserDataReceived(data: UserData)
             fun onLocationDataReceived(data: LocationData)
             fun onAllDataReceived(dataArray: List<UserData>)
+            fun onAllLocationDataReceived(dataArray: List<LocationData>)
         }
         fun retrieveData(referencePath: String, firebaseCallback: FirebaseCallback) {
             database.getReference(referencePath).child(auth.currentUser?.uid.toString()).get().addOnSuccessListener {
@@ -40,6 +41,23 @@ class FirebaseObject {
                 }
             })
         }
+        fun retrievedAllLocationData(referencePath: String, firebaseCallback: FirebaseCallback) {
+            val dataList = mutableListOf<LocationData>()
+            database.getReference(referencePath).addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(dataSnapshot: DataSnapshot) {
+                    dataList.clear()
+                    for (snapshot in dataSnapshot.children) {
+                        snapshot.getValue(LocationData::class.java)?.let { dataList.add(it) }
+                    }
+                    firebaseCallback.onAllLocationDataReceived(dataList)
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("FirebaseError", "Error retrieving data: $error")
+                }
+            })
+        }
+
         fun retrieveUserDataByEmail(path: String, email: String, firebaseCallback: FirebaseCallback) {
             database.getReference(path).orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {

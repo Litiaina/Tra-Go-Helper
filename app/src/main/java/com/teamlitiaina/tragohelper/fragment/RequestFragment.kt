@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.teamlitiaina.tragohelper.databinding.FragmentRequestBinding
-import com.teamlitiaina.tragohelper.dialog.LoadingDialog
 import com.teamlitiaina.tragohelper.dialog.RequestInformationDialog
 
 class RequestFragment : Fragment() {

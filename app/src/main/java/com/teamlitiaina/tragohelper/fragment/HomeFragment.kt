@@ -66,9 +66,11 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
         adapter.setDataReceivedListener(this)
         binding.sevicesRecyclerView.adapter = adapter
         binding.refreshImageButton.setOnClickListener {
-            binding.sevicesRecyclerView.adapter = adapter
+            FirebaseObject.retrieveAllData("vehicleOwner", this)
         }
     }
+
+    override fun onAllLocationDataReceived(dataArray: List<LocationData>) {}
 
     override fun onDataReceived(distance: String, position: Int) {
         if(!isAdded) {

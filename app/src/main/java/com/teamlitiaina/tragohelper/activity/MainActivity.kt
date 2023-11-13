@@ -110,6 +110,8 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
 
     override fun onAllDataReceived(dataArray: List<UserData>) {}
 
+    override fun onAllLocationDataReceived(dataArray: List<LocationData>) {}
+
     override fun onUserDataReceived(data: UserData) {
         binding.currentUserNameTextView.text = data.name
         currentUser = data

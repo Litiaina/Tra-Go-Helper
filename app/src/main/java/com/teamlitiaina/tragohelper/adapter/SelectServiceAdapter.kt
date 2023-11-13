@@ -31,6 +31,9 @@ class SelectServiceAdapter(private val dataArray: List<UserData>, private val ac
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val currentItem = dataArray[position]
+        if (currentItem.email == MainActivity.currentUser?.email) {
+
+        }
         holder.currentData = currentItem
         holder.binding.nameTextView.text = currentItem.name
         holder.binding.addressTextView.text = currentItem.userUID
@@ -77,6 +80,7 @@ class SelectServiceAdapter(private val dataArray: List<UserData>, private val ac
             }
 
             override fun onAllDataReceived(dataArray: List<UserData>) {}
+            override fun onAllLocationDataReceived(dataArray: List<LocationData>) {}
         })
     }
 

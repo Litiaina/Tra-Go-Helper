@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context.SENSOR_SERVICE
 import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -17,7 +18,6 @@ import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -39,6 +39,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
@@ -50,6 +51,7 @@ import com.google.android.gms.tasks.Task
 import com.google.maps.android.PolyUtil
 import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.activity.MainActivity
+import com.teamlitiaina.tragohelper.adapter.CustomInfoWindowAdapter
 import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.REQUEST_CHECK_SETTINGS
 import com.teamlitiaina.tragohelper.datetime.DateTime.Companion.getCurrentTime
 import com.teamlitiaina.tragohelper.data.LocationData
@@ -92,6 +94,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     private var cancelDirectionsUpdate = false
     private var isFollowingCamera = false
     private var followDirectionCamera = false
+    private val emailMarkerMap = mutableMapOf<String, Marker>()
+    private var userData = mutableListOf<UserData>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
@@ -102,6 +106,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         super.onViewCreated(view, savedInstanceState)
         loadingDialog = LoadingDialog()
         loadingDialog?.show(parentFragmentManager, "Loading")
+        FirebaseObject.retrievedAllLocationData("vehicleOwnerLocation", this)
+        FirebaseObject.retrieveAllData("vehicleOwner", this)
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireContext())
         createLocationRequest()
         checkLocationSettings()
@@ -159,19 +165,18 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         }
     }
 
-    fun setDestinationRoute(data: String) {
+    fun setDestinationRoute(email: String) {
         cancelDirections()
         binding.cameraSwitch.isChecked = false
         binding.cameraCardView.isVisible = false
         binding.clearDestinationImageButton.isVisible = true
         binding.followDirectionCameraCardView.isVisible = true
-        binding.followDirectionCameraSwitch.isChecked = true
         cancelDirectionsUpdate = false
-        if(Patterns.EMAIL_ADDRESS.matcher(data).matches()) {
-            FirebaseObject.retrieveUserDataByEmailRealTime(data, this@MapFragment)
-            FirebaseObject.retrieveLocationDataByEmailRealTime(data,this@MapFragment)
+        if(Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            FirebaseObject.retrieveUserDataByEmailRealTime(email, this@MapFragment)
+            FirebaseObject.retrieveLocationDataByEmailRealTime(email,this@MapFragment)
         } else {
-            getDirections(data)
+            getDirections(email)
         }
     }
 
@@ -208,6 +213,12 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
                     val location = results.getJSONObject(0).getJSONObject("geometry").getJSONObject("location")
                     destinationLatitude = location.getDouble("lat")
                     destinationLongitude = location.getDouble("lng")
+                    if (destinationMarker == null) {
+                        destinationMarker = mMap?.addMarker(MarkerOptions().position(LatLng(destinationLatitude, destinationLongitude)).title(destinationName))
+                    } else {
+                        destinationMarker?.position = LatLng(destinationLatitude, destinationLongitude)
+                        destinationMarker?.title = address
+                    }
                 }
             }, { error -> Log.e("Geocode API", "Error: ${error.message}") })
         )
@@ -254,7 +265,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
 
                     val roadOverlay = RoadManager.buildRoadOverlay(road)
 
-                    if (polyline == null && destinationMarker == null) {
+                    if (polyline == null) {
                         polyline = mMap?.addPolyline(
                             PolylineOptions()
                                 .addAll(roadOverlay.actualPoints.map { LatLng(it.latitude, it.longitude) })
@@ -262,16 +273,18 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
                                 .width(10f)
                                 .geodesic(true)
                         )
-                        destinationMarker = mMap?.addMarker(
-                            MarkerOptions().position(
-                                LatLng(destinationLatitude, destinationLongitude)
-                            ).title(destinationName)
-                        )
+//                        if(emailMarkerMap != destinationMarker) {
+//                            destinationMarker = mMap?.addMarker(
+//                                MarkerOptions().position(
+//                                    LatLng(destinationLatitude, destinationLongitude)
+//                                ).title(destinationName)
+//                            )
+//                        }
                     } else {
                         polyline?.points = roadOverlay.actualPoints.map { LatLng(it.latitude, it.longitude) }
                         destinationMarker?.position =
                             LatLng(destinationLatitude, destinationLongitude)
-                        destinationMarker?.title = destinationName
+//                        destinationMarker?.title = destinationName
                     }
 
                     if(followDirectionCamera) {
@@ -426,7 +439,14 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
 
     private fun updateMapStyle() {
         mMap?.let { googleMap ->
-            if (getCurrentTime() !in 6..17) {
+            if (getCurrentTime() in 6..17) {
+                googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                        requireContext(),
+                        R.raw.retro_theme_map_style
+                    )
+                )
+            } else {
                 googleMap.setMapStyle(
                     MapStyleOptions.loadRawResourceStyle(
                         requireContext(),
@@ -461,32 +481,46 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         currentLocation?.let {
             mMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 18f))
         }
-        addMarkers()
         startLocationUpdates()
         updateMapStyle()
         loadingDialog?.dismiss()
     }
 
     @SuppressLint("PotentialBehaviorOverride")
-    private fun addMarkers() {
-        val addresses = listOf("")
-        val markers = mutableListOf<Marker>()
+    private fun addOrUpdateMarkers(locationData: List<LocationData>) {
+        if (userData.isEmpty() || locationData.isEmpty()) {
+            return
+        }
+        for (index in 0 until min(userData.size, locationData.size)) {
+            val name = userData[index].name.toString()
+            val existingMarker = emailMarkerMap[locationData[index].email]
 
-        for (address in addresses) {
-            getLatLngFromAddress(address) { latLng ->
-                latLng?.let {
-                    val marker = mMap?.addMarker(MarkerOptions().position(it).title(address))
-                    marker?.let { m ->
-                        markers.add(m)
+            if (existingMarker != null) {
+                existingMarker.position = LatLng(locationData[index].latitude!!.toDouble(), locationData[index].longitude!!.toDouble())
+            } else {
+                if (name == MainActivity.currentUser?.name){
+                    continue
+                } else {
+                    val newMarker = mMap?.addMarker(MarkerOptions().position(LatLng(locationData[index].latitude!!.toDouble(), locationData[index].longitude!!.toDouble())).title(name).icon(
+                        BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(resources, org.osmdroid.library.R.drawable.person))))
+                    newMarker?.let { marker ->
+                        emailMarkerMap[locationData[index].email.toString()] = marker
                     }
                 }
             }
         }
-
-        mMap?.setOnMarkerClickListener { clickedMarker ->
-            markers.forEach { marker ->
+        mMap?.setInfoWindowAdapter(CustomInfoWindowAdapter(requireContext()))
+        mMap?.setOnInfoWindowClickListener { clickedMarker ->
+            emailMarkerMap.forEach { (email, marker) ->
                 if (clickedMarker == marker) {
-                    Toast.makeText(requireContext(), "Clicked on ${marker.title}", Toast.LENGTH_SHORT).show()
+                    setDestinationRoute(email)
+                }
+            }
+        }
+        mMap?.setOnMarkerClickListener { clickedMarker ->
+            emailMarkerMap.forEach { (_, marker) ->
+                if (clickedMarker == marker) {
+                    marker.showInfoWindow()
                     return@setOnMarkerClickListener true
                 }
             }
@@ -494,7 +528,13 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         }
     }
 
-    override fun onAllDataReceived(dataArray: List<UserData>) {}
+    override fun onAllDataReceived(dataArray: List<UserData>) {
+        userData = dataArray.toMutableList()
+    }
+
+    override fun onAllLocationDataReceived(dataArray: List<LocationData>) {
+        addOrUpdateMarkers(dataArray)
+    }
 
     override fun onUserDataReceived(data: UserData) {
         if(currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
@@ -584,5 +624,4 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         queue.cancelAll(this)
         clearDirectionsJobs()
     }
-
 }
