@@ -47,6 +47,7 @@
         android:id="@+id/top_spacer_view"
         android:layout_width="match_parent"
         android:layout_height="140dp"
+        android:background="@android:color/transparent"
         android:layout_below="@id/top_constraint_layout"/>
 
     <FrameLayout
@@ -67,6 +68,7 @@
         android:id="@+id/bottom_spacer_view"
         android:layout_width="match_parent"
         android:layout_height="60dp"
+        android:background="@android:color/transparent"
         android:layout_alignParentBottom="true" />
 
     <com.google.android.material.bottomnavigation.BottomNavigationView

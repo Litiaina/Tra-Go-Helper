@@ -31,12 +31,13 @@ import com.teamlitiaina.tragohelper.fragment.RequestFragment
 class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallback {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var homeFragment: HomeFragment
+    private lateinit var requestFragment: RequestFragment
+    private lateinit var profileFragment: ProfileFragment
 
     companion object {
         var currentUser: UserData? = null
         var mapFragment: MapFragment? = null
-        var currentUserLatitude: String? = null
-        var currentUserLongitude: String? = null
         lateinit var sharedPreferences: SharedPreferences
     }
 
@@ -50,12 +51,14 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         setContentView(binding.root)
 
         mapFragment = MapFragment()
+        homeFragment = HomeFragment()
+        requestFragment = RequestFragment()
+        profileFragment = ProfileFragment()
         requestPermissions()
-        FragmentChanger.replaceFragment(this@MainActivity, HomeFragment(), binding.dashboardLayout.id)
+
+        FragmentChanger.replaceFragment(this@MainActivity, homeFragment, binding.dashboardLayout.id)
 
         sharedPreferences = getSharedPreferences("currentUserLocation", Context.MODE_PRIVATE)
-        currentUserLatitude = sharedPreferences.getString("latitude", "")
-        currentUserLongitude = sharedPreferences.getString("longitude", "")
 
         if (FirebaseObject.auth.uid == null) {
             startActivity(Intent(this@MainActivity, LoginActivity::class.java))
@@ -69,27 +72,27 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
             when (item.itemId) {
                 R.id.navigation_home -> {
                     if(currentFragment !is HomeFragment) {
-                        FragmentChanger.replaceFragment(this@MainActivity, HomeFragment(), binding.dashboardLayout.id)
+                        FragmentChanger.replaceFragment(this@MainActivity, homeFragment, binding.dashboardLayout.id)
                         binding.topConstraintLayout.isVisible = true
                         binding.viewMapFrameLayout.isVisible = true
                         binding.topSpacerView.isVisible = true
-                        changeLayoutHeight(R.dimen.original_height, binding.bottomSpacerView)
+                        changeLayoutHeight(R.dimen.home_map_dimens, binding.bottomSpacerView)
                     }
                     true
                 }
                 R.id.navigation_current_request -> {
                     if(currentFragment !is RequestFragment) {
-                        FragmentChanger.replaceFragment(this@MainActivity, RequestFragment(), binding.dashboardLayout.id)
+                        FragmentChanger.replaceFragment(this@MainActivity, requestFragment, binding.dashboardLayout.id)
                         binding.topConstraintLayout.isVisible = false
                         binding.viewMapFrameLayout.isVisible = true
                         binding.topSpacerView.isVisible = false
-                        changeLayoutHeight(R.dimen.current_request_bellow_view_height, binding.bottomSpacerView)
+                        changeLayoutHeight(R.dimen.current_request_map_dimens, binding.bottomSpacerView)
                     }
                     true
                 }
                 R.id.navigation_profile -> {
                     if(currentFragment !is ProfileFragment) {
-                        FragmentChanger.replaceFragment(this@MainActivity, ProfileFragment(), binding.dashboardLayout.id)
+                        FragmentChanger.replaceFragment(this@MainActivity, profileFragment, binding.dashboardLayout.id)
                         binding.topConstraintLayout.isVisible = false
                         binding.viewMapFrameLayout.isVisible = false
                         binding.topSpacerView.isVisible = false

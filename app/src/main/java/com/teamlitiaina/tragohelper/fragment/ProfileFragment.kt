@@ -30,6 +30,8 @@ class ProfileFragment : Fragment() {
 
         binding.signOutImageButton.setOnClickListener {
             FirebaseObject.auth.signOut()
+            MainActivity.mapFragment = null
+            MainActivity.currentUser = null
             startActivity(Intent(requireContext(), LoginActivity::class.java))
             requireActivity().finish()
         }

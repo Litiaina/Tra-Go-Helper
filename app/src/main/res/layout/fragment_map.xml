@@ -160,7 +160,7 @@
 
         <com.github.ybq.android.spinkit.SpinKitView
             android:id="@+id/spin_kit"
-            style="@style/SpinKitView.Small.CubeGrid"
+            style="@style/SpinKitView.Small.MultiplePulse"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"

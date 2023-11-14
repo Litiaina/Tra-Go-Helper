@@ -18,7 +18,6 @@ import android.util.Patterns
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -53,6 +52,10 @@ import com.google.maps.android.PolyUtil
 import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.activity.MainActivity
 import com.teamlitiaina.tragohelper.adapter.CustomInfoWindowAdapter
+import com.teamlitiaina.tragohelper.constants.LocationIntervalConstants.Companion.FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS
+import com.teamlitiaina.tragohelper.constants.LocationIntervalConstants.Companion.MIN_UPDATE_DISTANCE_IN_METERS
+import com.teamlitiaina.tragohelper.constants.LocationIntervalConstants.Companion.UPDATE_INTERVAL_IN_MILLISECONDS
+import com.teamlitiaina.tragohelper.constants.LocationIntervalConstants.Companion.WILL_WAIT_FOR_ACCURATE_LOCATION
 import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.REQUEST_CHECK_SETTINGS
 import com.teamlitiaina.tragohelper.datetime.DateTime.Companion.getCurrentTime
 import com.teamlitiaina.tragohelper.data.LocationData
@@ -62,7 +65,6 @@ import com.teamlitiaina.tragohelper.dialog.LoadingDialog
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.calculateBearing
 import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.formatDistance
-import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.getDistanceHaversine
 import com.teamlitiaina.tragohelper.validation.Validation
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -98,6 +100,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     private var followDirectionCamera = false
     private val emailMarkerMap = mutableMapOf<String, Marker>()
     private var userData = mutableListOf<UserData>()
+    private var locationData = mutableListOf<LocationData>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
@@ -143,13 +146,14 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
             binding.clearDestinationImageButton.isVisible = false
             cancelDirections()
         }
-
     }
 
     private fun createLocationRequest() {
-        locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000).apply {
+        locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, UPDATE_INTERVAL_IN_MILLISECONDS).apply {
+            setMinUpdateIntervalMillis(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS)
+            setMinUpdateDistanceMeters(MIN_UPDATE_DISTANCE_IN_METERS)
             setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
-            setWaitForAccurateLocation(true)
+            setWaitForAccurateLocation(WILL_WAIT_FOR_ACCURATE_LOCATION)
         }.build()
     }
 
@@ -399,16 +403,12 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     private fun updateMapLocation() {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
             binding.loadingLocationLinearLayout.isVisible = false
-            MainActivity.currentUserLongitude = currentLocation!!.latitude.toString()
-            MainActivity.currentUserLongitude = currentLocation!!.longitude.toString()
+            with(MainActivity.sharedPreferences.edit()) {
+                putString("latitude", currentLocation!!.latitude.toString())
+                putString("longitude", currentLocation!!.longitude.toString())
+                apply()
+            }
             updateMapDirections()
-//            --- Usage will increase cpu but will get accurate distance
-//            getDistance(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
-//                if(distance != null) {
-//                    binding.distanceTextView.text = distance
-//                }
-//            }
-//            ---
             updateMapStyle()
             FirebaseObject.database.getReference("vehicleOwnerLocation").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
                 LocationData(FirebaseObject.auth.currentUser?.uid.toString(),MainActivity.currentUser?.email.toString(),currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
@@ -471,13 +471,20 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
             if(destinationLatitude != 0.0 && destinationLongitude != 0.0) {
                 getDirectionOriginToDestination(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude, destinationLongitude)
             }
-            getDistanceHaversine(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
-                if (distance != null) {
-                    if (destinationLatitude != 0.0 && destinationLongitude != 0.0) {
-                        binding.distanceTextView.text = formatDistance(distance)
-                    }
+//            --- Usage will increase cpu but will get accurate distance
+            getDistance(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
+                if(distance != null) {
+                    binding.distanceTextView.text = distance
                 }
             }
+//            ---
+//            getDistanceHaversine(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
+//                if (distance != null) {
+//                    if (destinationLatitude != 0.0 && destinationLongitude != 0.0) {
+//                        binding.distanceTextView.text = formatDistance(distance)
+//                    }
+//                }
+//            }
         }
     }
 
@@ -492,6 +499,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         }
         startLocationUpdates()
         updateMapStyle()
+        addOrUpdateMarkers(locationData)
         loadingDialog?.dismiss()
     }
 
@@ -544,7 +552,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     }
 
     override fun onAllLocationDataReceived(dataArray: List<LocationData>) {
-        addOrUpdateMarkers(dataArray)
+        locationData = dataArray.toMutableList()
+        addOrUpdateMarkers(locationData)
     }
 
     override fun onUserDataReceived(data: UserData) {
@@ -558,18 +567,14 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
 
     override fun onLocationDataReceived(data: LocationData) {
         if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
-            MainActivity.currentUserLongitude = currentLocation!!.latitude.toString()
-            MainActivity.currentUserLongitude = currentLocation!!.longitude.toString()
+            with(MainActivity.sharedPreferences.edit()) {
+                putString("latitude", currentLocation!!.latitude.toString())
+                putString("longitude", currentLocation!!.longitude.toString())
+                apply()
+            }
             destinationLatitude = data.latitude.toString().toDouble()
             destinationLongitude = data.longitude.toString().toDouble()
             updateMapDirections()
-//            --- Usage will increase cpu but will get accurate distance
-//            getDistance(currentLocation!!.latitude, currentLocation!!.longitude, destinationLatitude,destinationLongitude) { distance ->
-//                if(distance != null) {
-//                    binding.distanceTextView.text = distance
-//                }
-//            }
-//            ---
         } else {
             Log.e("Update Location", "Current location is null or fragment not attached or auth is null.")
         }

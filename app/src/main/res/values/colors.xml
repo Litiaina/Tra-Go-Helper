@@ -12,4 +12,5 @@
     <color name="brown">#504949</color>
     <color name="dark_green"> #013220</color>
     <color name="green">#008000</color>
+    <color name="transparent">#0000ffff</color>
 </resources>

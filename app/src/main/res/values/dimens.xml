@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="original_height">60dp</dimen>
-    <dimen name="current_request_bellow_view_height">430dp</dimen>
+    <dimen name="home_map_dimens">60dp</dimen>
+    <dimen name="current_request_map_dimens">130dp</dimen>
+    <dimen name="bottom_sheet_dimens">100dp</dimen>
 </resources>
