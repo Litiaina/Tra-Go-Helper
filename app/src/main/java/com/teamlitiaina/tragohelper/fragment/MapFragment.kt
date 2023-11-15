@@ -52,10 +52,10 @@ import com.google.maps.android.PolyUtil
 import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.activity.MainActivity
 import com.teamlitiaina.tragohelper.adapter.CustomInfoWindowAdapter
-import com.teamlitiaina.tragohelper.constants.LocationIntervalConstants.Companion.FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS
-import com.teamlitiaina.tragohelper.constants.LocationIntervalConstants.Companion.MIN_UPDATE_DISTANCE_IN_METERS
-import com.teamlitiaina.tragohelper.constants.LocationIntervalConstants.Companion.UPDATE_INTERVAL_IN_MILLISECONDS
-import com.teamlitiaina.tragohelper.constants.LocationIntervalConstants.Companion.WILL_WAIT_FOR_ACCURATE_LOCATION
+import com.teamlitiaina.tragohelper.constants.LocationUpdateConstants.Companion.FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS
+import com.teamlitiaina.tragohelper.constants.LocationUpdateConstants.Companion.MIN_UPDATE_DISTANCE_IN_METERS
+import com.teamlitiaina.tragohelper.constants.LocationUpdateConstants.Companion.UPDATE_INTERVAL_IN_MILLISECONDS
+import com.teamlitiaina.tragohelper.constants.LocationUpdateConstants.Companion.WILL_WAIT_FOR_ACCURATE_LOCATION
 import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.REQUEST_CHECK_SETTINGS
 import com.teamlitiaina.tragohelper.datetime.DateTime.Companion.getCurrentTime
 import com.teamlitiaina.tragohelper.data.LocationData
@@ -401,7 +401,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     }
 
     private fun updateMapLocation() {
-        if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
+        if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null && MainActivity.currentUser != null) {
             binding.loadingLocationLinearLayout.isVisible = false
             with(MainActivity.sharedPreferences.edit()) {
                 putString("latitude", currentLocation!!.latitude.toString())
@@ -415,7 +415,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
             ).addOnFailureListener {
                 Log.e("Update Location","${MainActivity.currentUser?.email.toString()}: Location update failed")
             }
-
         } else {
             Log.e("Update Location", "Current location is null or fragment not attached.")
         }
@@ -544,6 +543,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
                 }
                 false
             }
+            binding.loadingMarkersLinearLayout.isVisible = false
         }
     }
 
@@ -566,7 +566,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     }
 
     override fun onLocationDataReceived(data: LocationData) {
-        if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
+        if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null && MainActivity.currentUser != null) {
             with(MainActivity.sharedPreferences.edit()) {
                 putString("latitude", currentLocation!!.latitude.toString())
                 putString("longitude", currentLocation!!.longitude.toString())

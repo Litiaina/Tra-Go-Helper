@@ -3,8 +3,10 @@ package com.teamlitiaina.tragohelper.activity
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.core.view.WindowCompat
+import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityLoginBinding
 import com.teamlitiaina.tragohelper.dialog.LoadingDialog
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
@@ -29,15 +31,26 @@ class LoginActivity : AppCompatActivity() {
             val loadingDialog = LoadingDialog()
             loadingDialog.show(supportFragmentManager, "Loading")
             if (!Validation.isTextEmpty(this@LoginActivity, binding.emailEditText.text.toString(), binding.passwordEditText.text.toString(), message = "All fields are required")) {
-                FirebaseObject.auth.signInWithEmailAndPassword(binding.emailEditText.text.toString(), binding.passwordEditText.text.toString()).addOnSuccessListener {
-                    Toast.makeText(this@LoginActivity, "Login Success", Toast.LENGTH_SHORT).show()
-                    startActivity(Intent(this@LoginActivity, MainActivity::class.java))
-                    finish()
-                    loadingDialog.dismiss()
-                }.addOnFailureListener { _ ->
-                    Toast.makeText(this@LoginActivity, "Invalid email or password", Toast.LENGTH_SHORT).show()
+                if (Validation.isInternetAvailable(this@LoginActivity)) {
+                    FirebaseObject.auth.signInWithEmailAndPassword(binding.emailEditText.text.toString(), binding.passwordEditText.text.toString()).addOnSuccessListener {
+                        with(MainActivity.sharedPreferences.edit()) {
+                            putString("auth", FirebaseObject.auth.uid)
+                            apply()
+                        }
+                        Toast.makeText(this@LoginActivity, "Login Success", Toast.LENGTH_SHORT).show()
+                        startActivity(Intent(this@LoginActivity, MainActivity::class.java))
+                        finish()
+                        loadingDialog.dismiss()
+                    }.addOnFailureListener { _ ->
+                        Toast.makeText(this@LoginActivity, "Invalid email or password", Toast.LENGTH_SHORT).show()
+                        loadingDialog.dismiss()
+                    }
+                } else {
+                    Toast.makeText(this@LoginActivity, "No internet connection", Toast.LENGTH_SHORT).show()
                     loadingDialog.dismiss()
                 }
+            } else {
+                loadingDialog.dismiss()
             }
         }
     }

@@ -150,32 +150,70 @@
         android:scaleType="fitCenter"/>
 
     <LinearLayout
-        android:id="@+id/loading_location_linear_layout"
-        android:layout_width="160dp"
-        android:layout_height="35dp"
+        android:layout_width="170dp"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:layout_marginBottom="31dp">
 
-        <com.github.ybq.android.spinkit.SpinKitView
-            android:id="@+id/spin_kit"
-            style="@style/SpinKitView.Small.MultiplePulse"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginStart="10dp"
-            app:SpinKit_Color="@color/red" />
+        <LinearLayout
+            android:id="@+id/loading_location_linear_layout"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:orientation="horizontal"
+            android:layout_marginBottom="5dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="Acquiring location"
-            android:textStyle="italic"
-            android:textColor="@color/red"
-            android:textSize="15sp"
-            android:layout_marginStart="5dp"/>
+            <com.github.ybq.android.spinkit.SpinKitView
+                style="@style/SpinKitView.Small.MultiplePulse"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="10dp"
+                app:SpinKit_Color="@color/red" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Acquiring location"
+                android:textStyle="italic"
+                android:textColor="@color/red"
+                android:textSize="15sp"
+                android:layout_marginStart="5dp"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/loading_markers_linear_layout"
+            android:layout_width="match_parent"
+            android:layout_height="35dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:orientation="horizontal">
+
+            <com.github.ybq.android.spinkit.SpinKitView
+                style="@style/SpinKitView.Small.MultiplePulse"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginStart="10dp"
+                app:SpinKit_Color="@color/red" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Acquiring Services"
+                android:textStyle="italic"
+                android:textColor="@color/red"
+                android:textSize="15sp"
+                android:layout_marginStart="5dp"/>
+
+        </LinearLayout>
+
 
     </LinearLayout>
 

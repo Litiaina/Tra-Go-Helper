@@ -50,20 +50,29 @@ class RegisterActivity : AppCompatActivity() {
                     "Phone number not valid") ) {
                 val loadingDialog = LoadingDialog()
                 loadingDialog.show(supportFragmentManager, "Loading")
-                FirebaseObject.auth.createUserWithEmailAndPassword(binding.emailEditText.text.toString(), binding.passwordEditText.text.toString()).addOnSuccessListener {
-                    FirebaseObject.database.getReference("vehicleOwner").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
-                        UserData(FirebaseObject.auth.currentUser?.uid.toString(),binding.nameEditText.text.toString(),binding.emailEditText.text.toString(),binding.phoneNumberEditText.text.toString(),"")
-                    ).addOnSuccessListener {
-                        Toast.makeText(this@RegisterActivity, "Register Success", Toast.LENGTH_SHORT).show()
-                        startActivity(Intent(this@RegisterActivity, MainActivity::class.java))
-                        finish()
-                        loadingDialog.dismiss()
+                if (Validation.isInternetAvailable(this@RegisterActivity)) {
+                    FirebaseObject.auth.createUserWithEmailAndPassword(binding.emailEditText.text.toString(), binding.passwordEditText.text.toString()).addOnSuccessListener {
+                        FirebaseObject.database.getReference("vehicleOwner").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
+                            UserData(FirebaseObject.auth.currentUser?.uid.toString(),binding.nameEditText.text.toString(),binding.emailEditText.text.toString(),binding.phoneNumberEditText.text.toString(),"")
+                        ).addOnSuccessListener {
+                            with(MainActivity.sharedPreferences.edit()) {
+                                putString("auth", FirebaseObject.auth.uid)
+                                apply()
+                            }
+                            Toast.makeText(this@RegisterActivity, "Register Success", Toast.LENGTH_SHORT).show()
+                            startActivity(Intent(this@RegisterActivity, MainActivity::class.java))
+                            finish()
+                            loadingDialog.dismiss()
+                        }.addOnFailureListener { e ->
+                            Toast.makeText(this@RegisterActivity, "Error! $e", Toast.LENGTH_SHORT).show()
+                            loadingDialog.dismiss()
+                        }
                     }.addOnFailureListener { e ->
                         Toast.makeText(this@RegisterActivity, "Error! $e", Toast.LENGTH_SHORT).show()
                         loadingDialog.dismiss()
                     }
-                }.addOnFailureListener { e ->
-                    Toast.makeText(this@RegisterActivity, "Error! $e", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@RegisterActivity, "No internet connection", Toast.LENGTH_SHORT).show()
                     loadingDialog.dismiss()
                 }
             }

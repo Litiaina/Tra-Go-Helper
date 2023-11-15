@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import com.google.firebase.auth.FirebaseAuth
 import com.teamlitiaina.tragohelper.activity.LoginActivity
 import com.teamlitiaina.tragohelper.activity.MainActivity
 import com.teamlitiaina.tragohelper.databinding.FragmentProfileBinding
@@ -30,6 +31,10 @@ class ProfileFragment : Fragment() {
 
         binding.signOutImageButton.setOnClickListener {
             FirebaseObject.auth.signOut()
+            with(MainActivity.sharedPreferences.edit()) {
+                putString("auth", "")
+                apply()
+            }
             MainActivity.mapFragment = null
             MainActivity.currentUser = null
             startActivity(Intent(requireContext(), LoginActivity::class.java))

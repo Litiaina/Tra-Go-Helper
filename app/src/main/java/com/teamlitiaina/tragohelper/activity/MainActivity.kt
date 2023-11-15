@@ -8,6 +8,7 @@ import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.AlertDialog
@@ -50,6 +51,14 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         )
         setContentView(binding.root)
 
+        FirebaseObject.retrieveData("vehicleOwner", this)
+        sharedPreferences = getSharedPreferences("currentUserLocation", Context.MODE_PRIVATE)
+
+        if (sharedPreferences.getString("auth", "") == "") {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+        }
+
         mapFragment = MapFragment()
         homeFragment = HomeFragment()
         requestFragment = RequestFragment()
@@ -57,15 +66,6 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         requestPermissions()
 
         FragmentChanger.replaceFragment(this@MainActivity, homeFragment, binding.dashboardLayout.id)
-
-        sharedPreferences = getSharedPreferences("currentUserLocation", Context.MODE_PRIVATE)
-
-        if (FirebaseObject.auth.uid == null) {
-            startActivity(Intent(this@MainActivity, LoginActivity::class.java))
-            finish()
-        }
-
-        FirebaseObject.retrieveData("vehicleOwner", this)
 
         binding.navigationBarBottomNavigationView.setOnItemSelectedListener { item ->
             val currentFragment = supportFragmentManager.findFragmentById(binding.dashboardLayout.id)
