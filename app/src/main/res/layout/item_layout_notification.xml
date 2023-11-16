@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/notification_parent_card_view"
+    android:layout_width="match_parent"
+    android:layout_height="150dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_margin="20dp"
+    app:cardCornerRadius="10dp"
+    android:background="@drawable/shadow_button_layer_bottom_background"
+    app:cardElevation="20dp">
+
+    <TextView
+        android:id="@+id/notification_title_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="20dp"
+        android:layout_gravity="start"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="20dp"
+        android:layout_marginTop="20dp"
+        android:text="(notification title)"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/notification_detail_text_view"
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="15dp"
+        android:layout_marginTop="45dp"
+        android:ellipsize="end"
+        android:text="(notification information)"
+        android:textColor="@color/black"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/date_time_text_view"
+        android:layout_width="150dp"
+        android:layout_height="20dp"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="20dp"
+        android:layout_marginBottom="10dp"
+        android:text="(notification datetime)"
+        android:textSize="12sp"/>
+
+    <TextView
+        android:id="@+id/view_notification_text_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="15dp"
+        android:layout_marginBottom="10dp"
+        android:textColor="#6D3ECF"
+        android:textSize="14sp"
+        android:text="@string/underlined_text_view"/>
+
+</androidx.cardview.widget.CardView>

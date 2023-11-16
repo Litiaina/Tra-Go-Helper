@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.teamlitiaina.tragohelper.activity.MainActivity
 import com.teamlitiaina.tragohelper.adapter.SelectServiceAdapter
@@ -18,6 +19,10 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
+    private var userData = mutableListOf<UserData>()
+    private var locationData = mutableListOf<LocationData>()
+    private lateinit var nearestServiceAdapter: SelectServiceAdapter
+    private var beginRealTimeUpdate =  false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
@@ -27,8 +32,9 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.sevicesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.nearbyServicesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         FirebaseObject.retrieveAllData("vehicleOwner", this)
+        FirebaseObject.retrievedAllLocationData("vehicleOwnerLocation", this)
 
         binding.addressSearchView.setOnQueryTextListener(object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -46,7 +52,23 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
                 return false
             }
         })
-        FirebaseObject.retrieveAllData("vehicleOwner", this)
+
+        binding.undeterminedView.setOnClickListener {
+            beginRealTimeUpdate = true
+            binding.noSelectedServiceViewRelativeLayout.isVisible = false
+            MainActivity.mapFragment?.userData = userData
+            MainActivity.mapFragment?.locationData = locationData
+            nearestServiceAdapter = SelectServiceAdapter(userData, requireActivity())
+            nearestServiceAdapter.setDataReceivedListener(this)
+            binding.nearbyServicesRecyclerView.adapter = nearestServiceAdapter
+            MainActivity.mapFragment?.addOrUpdateMarkers(userData, locationData)
+        }
+
+        binding.refreshImageButton.setOnClickListener {
+            FirebaseObject.retrieveAllData("vehicleOwner", this)
+            FirebaseObject.retrievedAllLocationData("vehicleOwnerLocation", this)
+        }
+
     }
 
     override fun onDestroyView() {
@@ -62,22 +84,26 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
         if (!isAdded) {
             return
         }
-        val adapter = SelectServiceAdapter(dataArray, requireActivity())
-        adapter.setDataReceivedListener(this)
-        binding.sevicesRecyclerView.adapter = adapter
-        binding.refreshImageButton.setOnClickListener {
-            FirebaseObject.retrieveAllData("vehicleOwner", this)
-        }
+        userData = dataArray.toMutableList()
     }
 
-    override fun onAllLocationDataReceived(dataArray: List<LocationData>) {}
+    override fun onAllLocationDataReceived(dataArray: List<LocationData>) {
+        if (!isAdded) {
+            return
+        }
+        locationData = dataArray.toMutableList()
+        if (beginRealTimeUpdate) {
+            MainActivity.mapFragment?.addOrUpdateMarkers(userData, locationData)
+            nearestServiceAdapter = SelectServiceAdapter(userData, requireActivity())
+        }
+    }
 
     override fun onDataReceived(distance: String, position: Int) {
         if(!isAdded) {
             return
         }
-        binding.sevicesRecyclerView.post {
-            val holder = binding.sevicesRecyclerView.findViewHolderForAdapterPosition(position) as? SelectServiceAdapter.ViewHolder
+        binding.nearbyServicesRecyclerView.post {
+            val holder = binding.nearbyServicesRecyclerView.findViewHolderForAdapterPosition(position) as? SelectServiceAdapter.ViewHolder
             holder?.binding?.distanceTextView?.text = distance
         }
     }

@@ -99,8 +99,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     private var isFollowingCamera = false
     private var followDirectionCamera = false
     private val emailMarkerMap = mutableMapOf<String, Marker>()
-    private var userData = mutableListOf<UserData>()
-    private var locationData = mutableListOf<LocationData>()
+    var userData = mutableListOf<UserData>()
+    var locationData = mutableListOf<LocationData>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
@@ -111,7 +111,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         super.onViewCreated(view, savedInstanceState)
         loadingDialog = LoadingDialog()
         loadingDialog?.show(parentFragmentManager, "Loading")
-        FirebaseObject.retrievedAllLocationData("vehicleOwnerLocation", this)
         FirebaseObject.retrieveAllData("vehicleOwner", this)
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireContext())
         createLocationRequest()
@@ -410,6 +409,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
             }
             updateMapDirections()
             updateMapStyle()
+            addOrUpdateMarkers(userData, locationData)
             FirebaseObject.database.getReference("vehicleOwnerLocation").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
                 LocationData(FirebaseObject.auth.currentUser?.uid.toString(),MainActivity.currentUser?.email.toString(),currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
             ).addOnFailureListener {
@@ -498,12 +498,11 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         }
         startLocationUpdates()
         updateMapStyle()
-        addOrUpdateMarkers(locationData)
         loadingDialog?.dismiss()
     }
 
     @SuppressLint("PotentialBehaviorOverride")
-    private fun addOrUpdateMarkers(locationData: List<LocationData>) {
+     fun addOrUpdateMarkers(userData: List<UserData>, locationData: List<LocationData>) {
         if (userData.isEmpty() || locationData.isEmpty()) {
             return
         }
@@ -515,14 +514,10 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
                 if (existingMarker != null) {
                     existingMarker.position = LatLng(locationData[index].latitude!!.toDouble(), locationData[index].longitude!!.toDouble())
                 } else {
-                    if (name == MainActivity.currentUser?.name){
-                        continue
-                    } else {
-                        val newMarker = mMap?.addMarker(MarkerOptions().position(LatLng(locationData[index].latitude!!.toDouble(), locationData[index].longitude!!.toDouble())).title(name).icon(
-                            BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(resources, org.osmdroid.library.R.drawable.person))))
-                        newMarker?.let { marker ->
-                            emailMarkerMap[locationData[index].email.toString()] = marker
-                        }
+                    val newMarker = mMap?.addMarker(MarkerOptions().position(LatLng(locationData[index].latitude!!.toDouble(), locationData[index].longitude!!.toDouble())).title(name).icon(
+                        BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(resources, org.osmdroid.library.R.drawable.person))))
+                    newMarker?.let { marker ->
+                        emailMarkerMap[locationData[index].email.toString()] = marker
                     }
                 }
             }
@@ -548,13 +543,9 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     }
 
     override fun onAllDataReceived(dataArray: List<UserData>) {
-        userData = dataArray.toMutableList()
     }
 
-    override fun onAllLocationDataReceived(dataArray: List<LocationData>) {
-        locationData = dataArray.toMutableList()
-        addOrUpdateMarkers(locationData)
-    }
+    override fun onAllLocationDataReceived(dataArray: List<LocationData>) {}
 
     override fun onUserDataReceived(data: UserData) {
         if(currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {

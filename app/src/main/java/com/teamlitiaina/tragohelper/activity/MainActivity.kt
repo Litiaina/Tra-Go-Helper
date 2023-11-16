@@ -26,6 +26,7 @@ import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 import com.teamlitiaina.tragohelper.fragment.FragmentChanger
 import com.teamlitiaina.tragohelper.fragment.HomeFragment
 import com.teamlitiaina.tragohelper.fragment.MapFragment
+import com.teamlitiaina.tragohelper.fragment.NotificationFragment
 import com.teamlitiaina.tragohelper.fragment.ProfileFragment
 import com.teamlitiaina.tragohelper.fragment.RequestFragment
 
@@ -35,6 +36,7 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
     private lateinit var homeFragment: HomeFragment
     private lateinit var requestFragment: RequestFragment
     private lateinit var profileFragment: ProfileFragment
+    private lateinit var notificationFragment: NotificationFragment
 
     companion object {
         var currentUser: UserData? = null
@@ -63,6 +65,7 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         homeFragment = HomeFragment()
         requestFragment = RequestFragment()
         profileFragment = ProfileFragment()
+        notificationFragment = NotificationFragment()
         requestPermissions()
 
         FragmentChanger.replaceFragment(this@MainActivity, homeFragment, binding.dashboardLayout.id)
@@ -87,6 +90,15 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
                         binding.viewMapFrameLayout.isVisible = true
                         binding.topSpacerView.isVisible = false
                         changeLayoutHeight(R.dimen.current_request_map_dimens, binding.bottomSpacerView)
+                    }
+                    true
+                }
+                R.id.navigation_notifications -> {
+                    if(currentFragment !is NotificationFragment) {
+                        FragmentChanger.replaceFragment(this@MainActivity, notificationFragment, binding.dashboardLayout.id)
+                        binding.topConstraintLayout.isVisible = false
+                        binding.viewMapFrameLayout.isVisible = false
+                        binding.topSpacerView.isVisible = false
                     }
                     true
                 }
