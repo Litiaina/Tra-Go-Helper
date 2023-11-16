@@ -119,7 +119,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         getLastLocation()
         sensorManager = requireActivity().getSystemService(SENSOR_SERVICE) as SensorManager
         sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR), SensorManager.SENSOR_DELAY_NORMAL)
-        binding.clearDestinationImageButton.isVisible = false
         binding.followDirectionCameraCardView.isVisible = false
 
         binding.cameraSwitch.setOnCheckedChangeListener { _, isChecked ->
@@ -138,13 +137,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
                 .build()))
         }
 
-        binding.clearDestinationImageButton.setOnClickListener {
-            binding.cameraCardView.isVisible = true
-            binding.clearDestinationImageButton.isVisible = false
-            binding.followDirectionCameraCardView.isVisible = false
-            binding.clearDestinationImageButton.isVisible = false
-            cancelDirections()
-        }
     }
 
     private fun createLocationRequest() {
@@ -174,7 +166,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         cancelDirections()
         binding.cameraSwitch.isChecked = false
         binding.cameraCardView.isVisible = false
-        binding.clearDestinationImageButton.isVisible = true
         binding.followDirectionCameraCardView.isVisible = true
         cancelDirectionsUpdate = false
         if(Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
@@ -192,7 +183,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         }
     }
 
-    private fun cancelDirections() {
+    fun cancelDirections() {
         cancelDirectionsUpdate = true
         polyline?.remove()
         destinationMarker?.remove()
@@ -203,6 +194,15 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         destinationLongitude = 0.0
         binding.distanceTextView.text = "0 m"
         clearDirectionsJobs()
+    }
+
+    fun clearMap() {
+        emailMarkerMap.values.forEach { it.remove() }
+        emailMarkerMap.clear()
+        userData.clear()
+        locationData.clear()
+        cancelDirections()
+        mMap?.clear()
     }
 
     private fun getDirections(address: String) {

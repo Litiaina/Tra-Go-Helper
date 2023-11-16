@@ -19,9 +19,10 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
+
+    private var nearestServiceAdapter: SelectServiceAdapter? = null
     private var userData = mutableListOf<UserData>()
     private var locationData = mutableListOf<LocationData>()
-    private lateinit var nearestServiceAdapter: SelectServiceAdapter
     private var beginRealTimeUpdate =  false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -33,8 +34,7 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
         super.onViewCreated(view, savedInstanceState)
 
         binding.nearbyServicesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
-        FirebaseObject.retrieveAllData("vehicleOwner", this)
-        FirebaseObject.retrievedAllLocationData("vehicleOwnerLocation", this)
+        initializeCallBack()
 
         binding.addressSearchView.setOnQueryTextListener(object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
@@ -53,20 +53,31 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
             }
         })
 
+        binding.clearDestinationImageButton.setOnClickListener {
+            MainActivity.mapFragment?.cancelDirections()
+        }
+
+        binding.clearMapImageButton.setOnClickListener {
+            clearData()
+        }
+
         binding.undeterminedView.setOnClickListener {
             beginRealTimeUpdate = true
             binding.noSelectedServiceViewRelativeLayout.isVisible = false
+            initializeCallBack()
             MainActivity.mapFragment?.userData = userData
             MainActivity.mapFragment?.locationData = locationData
-            nearestServiceAdapter = SelectServiceAdapter(userData, requireActivity())
-            nearestServiceAdapter.setDataReceivedListener(this)
-            binding.nearbyServicesRecyclerView.adapter = nearestServiceAdapter
             MainActivity.mapFragment?.addOrUpdateMarkers(userData, locationData)
+            nearestServiceAdapter = SelectServiceAdapter(userData, requireActivity())
+            nearestServiceAdapter?.setDataReceivedListener(this)
+            binding.nearbyServicesRecyclerView.adapter = nearestServiceAdapter
         }
 
         binding.refreshImageButton.setOnClickListener {
-            FirebaseObject.retrieveAllData("vehicleOwner", this)
-            FirebaseObject.retrievedAllLocationData("vehicleOwnerLocation", this)
+            initializeCallBack()
+            nearestServiceAdapter = SelectServiceAdapter(userData, requireActivity())
+            nearestServiceAdapter?.setDataReceivedListener(this)
+
         }
 
     }
@@ -74,6 +85,23 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun clearData() {
+        nearestServiceAdapter = null
+        userData.clear()
+        locationData.clear()
+        beginRealTimeUpdate = false
+        binding.noSelectedServiceViewRelativeLayout.isVisible = true
+        MainActivity.mapFragment?.clearMap()
+        initializeCallBack()
+        nearestServiceAdapter = SelectServiceAdapter(userData, requireActivity())
+        nearestServiceAdapter?.setDataReceivedListener(this)
+    }
+
+    private fun initializeCallBack() {
+        FirebaseObject.retrieveAllData("vehicleOwner", this)
+        FirebaseObject.retrievedAllLocationData("vehicleOwnerLocation", this)
     }
 
     override fun onUserDataReceived(data: UserData) {}
