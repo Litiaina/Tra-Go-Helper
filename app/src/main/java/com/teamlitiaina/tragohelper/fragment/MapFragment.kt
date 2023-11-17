@@ -197,6 +197,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     }
 
     fun clearMap() {
+        binding.followDirectionCameraCardView.isVisible = false
+        binding.cameraCardView.isVisible = true
         emailMarkerMap.values.forEach { it.remove() }
         emailMarkerMap.clear()
         userData.clear()
