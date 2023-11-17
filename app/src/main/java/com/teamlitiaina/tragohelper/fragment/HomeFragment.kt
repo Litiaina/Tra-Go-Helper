@@ -74,7 +74,7 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
         }
 
         binding.refreshImageButton.setOnClickListener {
-            initializeCallBack()
+            MainActivity.mapFragment?.addOrUpdateMarkers(userData, locationData)
             nearestServiceAdapter = SelectServiceAdapter(userData, requireActivity())
             nearestServiceAdapter?.setDataReceivedListener(this)
 
@@ -123,6 +123,7 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
         if (beginRealTimeUpdate) {
             MainActivity.mapFragment?.addOrUpdateMarkers(userData, locationData)
             nearestServiceAdapter = SelectServiceAdapter(userData, requireActivity())
+            nearestServiceAdapter?.setDataReceivedListener(this)
         }
     }
 
