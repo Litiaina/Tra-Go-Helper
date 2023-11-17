@@ -9,18 +9,18 @@ import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.teamlitiaina.tragohelper.activity.MainActivity
-import com.teamlitiaina.tragohelper.adapter.SelectServiceAdapter
+import com.teamlitiaina.tragohelper.adapter.NearestServiceAdapter
 import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.FragmentHomeBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseObject
 
-class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, SelectServiceAdapter.DataReceivedListener {
+class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, NearestServiceAdapter.DataReceivedListener {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    private var nearestServiceAdapter: SelectServiceAdapter? = null
+    private var nearestServiceAdapter: NearestServiceAdapter? = null
     private var userData = mutableListOf<UserData>()
     private var locationData = mutableListOf<LocationData>()
     private var beginRealTimeUpdate =  false
@@ -68,15 +68,12 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
             MainActivity.mapFragment?.userData = userData
             MainActivity.mapFragment?.locationData = locationData
             MainActivity.mapFragment?.addOrUpdateMarkers(userData, locationData)
-            nearestServiceAdapter = SelectServiceAdapter(userData, requireActivity())
+            nearestServiceAdapter = NearestServiceAdapter(userData, requireActivity())
             nearestServiceAdapter?.setDataReceivedListener(this)
             binding.nearbyServicesRecyclerView.adapter = nearestServiceAdapter
         }
 
         binding.refreshImageButton.setOnClickListener {
-            MainActivity.mapFragment?.addOrUpdateMarkers(userData, locationData)
-            nearestServiceAdapter = SelectServiceAdapter(userData, requireActivity())
-            nearestServiceAdapter?.setDataReceivedListener(this)
 
         }
 
@@ -95,7 +92,7 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
         binding.noSelectedServiceViewRelativeLayout.isVisible = true
         MainActivity.mapFragment?.clearMap()
         initializeCallBack()
-        nearestServiceAdapter = SelectServiceAdapter(userData, requireActivity())
+        nearestServiceAdapter = NearestServiceAdapter(userData, requireActivity())
         nearestServiceAdapter?.setDataReceivedListener(this)
     }
 
@@ -122,7 +119,7 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
         locationData = dataArray.toMutableList()
         if (beginRealTimeUpdate) {
             MainActivity.mapFragment?.addOrUpdateMarkers(userData, locationData)
-            nearestServiceAdapter = SelectServiceAdapter(userData, requireActivity())
+            nearestServiceAdapter = NearestServiceAdapter(userData, requireActivity())
             nearestServiceAdapter?.setDataReceivedListener(this)
         }
     }
@@ -132,7 +129,7 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Sele
             return
         }
         binding.nearbyServicesRecyclerView.post {
-            val holder = binding.nearbyServicesRecyclerView.findViewHolderForAdapterPosition(position) as? SelectServiceAdapter.ViewHolder
+            val holder = binding.nearbyServicesRecyclerView.findViewHolderForAdapterPosition(position) as? NearestServiceAdapter.ViewHolder
             holder?.binding?.distanceTextView?.text = distance
         }
     }
