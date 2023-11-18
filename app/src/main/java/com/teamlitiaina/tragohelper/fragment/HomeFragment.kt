@@ -81,6 +81,7 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Near
 
     override fun onDestroyView() {
         super.onDestroyView()
+        clearData()
         _binding = null
     }
 
