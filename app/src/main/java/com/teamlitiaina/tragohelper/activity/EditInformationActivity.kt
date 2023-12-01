@@ -18,6 +18,7 @@ import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityEditInformationBinding
 import com.teamlitiaina.tragohelper.dialog.LoadingDialog
+import com.teamlitiaina.tragohelper.dialog.UploadingDialog
 import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
 import com.teamlitiaina.tragohelper.validation.Validation
 
@@ -80,10 +81,11 @@ class EditInformationActivity : AppCompatActivity(), FirebaseBackend.Companion.F
     private fun saveToFirebaseStorage() {
         val imageReference = FirebaseBackend.storageReference.child("${FirebaseBackend.auth.currentUser?.uid.toString()}/Storage/ProfileImage/${FirebaseBackend.auth.currentUser?.uid.toString()}-profile_image.jpg")
         val uploadTask = imageReference.putFile(uri!!)
-        val loadingDialog = LoadingDialog()
-        loadingDialog.show(supportFragmentManager, "Loading")
+        val uploadingDialog = UploadingDialog()
+        uploadingDialog.show(supportFragmentManager, "Loading")
         uploadTask.addOnProgressListener { taskSnapshot ->
             val progress = (100.0 * taskSnapshot.bytesTransferred / taskSnapshot.totalByteCount).toInt()
+            uploadingDialog.updateProgress(progress)
         }.addOnSuccessListener { taskSnapshot ->
             val uriTask = taskSnapshot.storage.downloadUrl
             if (uriTask.isComplete) {
@@ -110,9 +112,10 @@ class EditInformationActivity : AppCompatActivity(), FirebaseBackend.Companion.F
                     }
                 }
             }
-            loadingDialog.dismiss()
+            uploadingDialog.dismiss()
         }.addOnFailureListener {
-            loadingDialog.dismiss()
+            uploadingDialog.dismiss()
+            Toast.makeText(this, "Failed to upload", Toast.LENGTH_SHORT).show()
         }
     }
     private fun updatePersonalInformation() {
