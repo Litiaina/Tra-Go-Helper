@@ -3,13 +3,11 @@ package com.teamlitiaina.tragohelper.activity
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.core.view.WindowCompat
-import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityLoginBinding
 import com.teamlitiaina.tragohelper.dialog.LoadingDialog
-import com.teamlitiaina.tragohelper.firebase.FirebaseObject
+import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
 import com.teamlitiaina.tragohelper.validation.Validation
 
 class LoginActivity : AppCompatActivity() {
@@ -32,9 +30,9 @@ class LoginActivity : AppCompatActivity() {
             loadingDialog.show(supportFragmentManager, "Loading")
             if (!Validation.isTextEmpty(this@LoginActivity, binding.emailEditText.text.toString(), binding.passwordEditText.text.toString(), message = "All fields are required")) {
                 if (Validation.isInternetAvailable(this@LoginActivity)) {
-                    FirebaseObject.auth.signInWithEmailAndPassword(binding.emailEditText.text.toString(), binding.passwordEditText.text.toString()).addOnSuccessListener {
+                    FirebaseBackend.auth.signInWithEmailAndPassword(binding.emailEditText.text.toString(), binding.passwordEditText.text.toString()).addOnSuccessListener {
                         with(MainActivity.sharedPreferences.edit()) {
-                            putString("auth", FirebaseObject.auth.uid)
+                            putString("auth", FirebaseBackend.auth.uid)
                             apply()
                         }
                         Toast.makeText(this@LoginActivity, "Login Success", Toast.LENGTH_SHORT).show()

@@ -62,7 +62,7 @@ import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.FragmentMapBinding
 import com.teamlitiaina.tragohelper.dialog.LoadingDialog
-import com.teamlitiaina.tragohelper.firebase.FirebaseObject
+import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
 import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.calculateBearing
 import com.teamlitiaina.tragohelper.utility.LocationUtils.Companion.formatDistance
 import com.teamlitiaina.tragohelper.validation.Validation
@@ -75,7 +75,7 @@ import org.osmdroid.bonuspack.routing.RoadManager
 import org.osmdroid.util.GeoPoint
 import kotlin.math.*
 
-class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, FirebaseObject.Companion.FirebaseCallback {
+class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, FirebaseBackend.Companion.FirebaseCallback {
 
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
@@ -111,7 +111,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         super.onViewCreated(view, savedInstanceState)
         loadingDialog = LoadingDialog()
         loadingDialog?.show(parentFragmentManager, "Loading")
-        FirebaseObject.retrieveAllData("vehicleOwner", this)
+        FirebaseBackend.retrieveAllData("vehicleOwner", this)
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireContext())
         createLocationRequest()
         checkLocationSettings()
@@ -169,8 +169,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         binding.followDirectionCameraCardView.isVisible = true
         cancelDirectionsUpdate = false
         if(Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            FirebaseObject.retrieveUserDataByEmailRealTime(email, this@MapFragment)
-            FirebaseObject.retrieveLocationDataByEmailRealTime(email,this@MapFragment)
+            FirebaseBackend.retrieveUserDataByEmailRealTime(email, this@MapFragment)
+            FirebaseBackend.retrieveLocationDataByEmailRealTime(email,this@MapFragment)
         } else {
             getDirections(email)
         }
@@ -402,7 +402,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     }
 
     private fun updateMapLocation() {
-        if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null && MainActivity.currentUser != null) {
+        if (currentLocation != null && isAdded && FirebaseBackend.auth.uid != null && MainActivity.currentUser != null) {
             binding.loadingLocationLinearLayout.isVisible = false
             with(MainActivity.sharedPreferences.edit()) {
                 putString("latitude", currentLocation!!.latitude.toString())
@@ -412,8 +412,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
             updateMapDirections()
             updateMapStyle()
             addOrUpdateMarkers(userData, locationData)
-            FirebaseObject.database.getReference("vehicleOwnerLocation").child(FirebaseObject.auth.currentUser?.uid.toString()).setValue(
-                LocationData(FirebaseObject.auth.currentUser?.uid.toString(),MainActivity.currentUser?.email.toString(),currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
+            FirebaseBackend.database.getReference("vehicleOwnerLocation").child(FirebaseBackend.auth.currentUser?.uid.toString()).setValue(
+                LocationData(FirebaseBackend.auth.currentUser?.uid.toString(),MainActivity.currentUser?.email.toString(),currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
             ).addOnFailureListener {
                 Log.e("Update Location","${MainActivity.currentUser?.email.toString()}: Location update failed")
             }
@@ -550,7 +550,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     override fun onAllLocationDataReceived(dataArray: List<LocationData>) {}
 
     override fun onUserDataReceived(data: UserData) {
-        if(currentLocation != null && isAdded && FirebaseObject.auth.uid != null) {
+        if(currentLocation != null && isAdded && FirebaseBackend.auth.uid != null) {
             destinationName = null
             destinationName = data.name
         } else {
@@ -559,7 +559,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     }
 
     override fun onLocationDataReceived(data: LocationData) {
-        if (currentLocation != null && isAdded && FirebaseObject.auth.uid != null && MainActivity.currentUser != null) {
+        if (currentLocation != null && isAdded && FirebaseBackend.auth.uid != null && MainActivity.currentUser != null) {
             with(MainActivity.sharedPreferences.edit()) {
                 putString("latitude", currentLocation!!.latitude.toString())
                 putString("longitude", currentLocation!!.longitude.toString())

@@ -9,7 +9,7 @@ import com.google.firebase.database.ValueEventListener
 import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 
-class FirebaseObject {
+open class FirebaseBackend {
     companion object {
         val auth: FirebaseAuth = FirebaseAuth.getInstance()
         val database: FirebaseDatabase = FirebaseDatabase.getInstance()

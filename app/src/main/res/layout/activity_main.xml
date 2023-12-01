@@ -84,6 +84,29 @@
         app:itemIconSize="30dp"
         app:itemIconTint="@drawable/item_selector"
         app:labelVisibilityMode="unlabeled"
-        app:menu="@menu/navigation_bar" />
+        app:menu="@menu/navigation_bar" >
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/notification_count_card_view"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:layout_marginStart="65dp"
+            android:layout_marginBottom="12dp"
+            app:cardCornerRadius="10dp"
+            android:backgroundTint="@color/red">
+
+            <TextView
+                android:id="@+id/notification_count_text_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:textSize="12sp"/>
+
+        </androidx.cardview.widget.CardView>
+
+    </com.google.android.material.bottomnavigation.BottomNavigationView>
 
 </RelativeLayout>

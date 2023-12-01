@@ -8,9 +8,9 @@ import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
 import android.view.View
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -20,9 +20,11 @@ import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.LOCATION_PERMISSION_REQUEST_CODE
 import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.SETTINGS_REQUEST_CODE
 import com.teamlitiaina.tragohelper.data.LocationData
+import com.teamlitiaina.tragohelper.data.NotificationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityMainBinding
-import com.teamlitiaina.tragohelper.firebase.FirebaseObject
+import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
+import com.teamlitiaina.tragohelper.firebase.NotificationFirebaseBackend
 import com.teamlitiaina.tragohelper.fragment.FragmentChanger
 import com.teamlitiaina.tragohelper.fragment.HomeFragment
 import com.teamlitiaina.tragohelper.fragment.MapFragment
@@ -30,13 +32,14 @@ import com.teamlitiaina.tragohelper.fragment.NotificationFragment
 import com.teamlitiaina.tragohelper.fragment.ProfileFragment
 import com.teamlitiaina.tragohelper.fragment.RequestFragment
 
-class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallback {
+class MainActivity : AppCompatActivity(), FirebaseBackend.Companion.FirebaseCallback, NotificationFirebaseBackend.Companion.NotificationFirebaseCallback {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var homeFragment: HomeFragment
     private lateinit var requestFragment: RequestFragment
     private lateinit var profileFragment: ProfileFragment
     private lateinit var notificationFragment: NotificationFragment
+    private var notificationsList = mutableListOf<NotificationData>()
 
     companion object {
         var currentUser: UserData? = null
@@ -53,7 +56,9 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
         )
         setContentView(binding.root)
 
-        FirebaseObject.retrieveData("vehicleOwner", this)
+        binding.notificationCountCardView.isVisible = false
+
+        FirebaseBackend.retrieveData("vehicleOwner", this)
         sharedPreferences = getSharedPreferences("currentUserLocation", Context.MODE_PRIVATE)
 
         if (sharedPreferences.getString("auth", "") == "") {
@@ -130,7 +135,8 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
     override fun onUserDataReceived(data: UserData) {
         binding.currentUserNameTextView.text = data.name
         currentUser = data
-        FirebaseObject.retrieveLocationDataByEmailRealTime(currentUser?.email.toString(), this)
+        FirebaseBackend.retrieveLocationDataByEmailRealTime(currentUser?.email.toString(), this)
+        NotificationFirebaseBackend.retrieveNotificationByEmail(currentUser?.email.toString(), this)
     }
 
     override fun onLocationDataReceived(data: LocationData) {
@@ -213,6 +219,17 @@ class MainActivity : AppCompatActivity(), FirebaseObject.Companion.FirebaseCallb
                 }
             }
         }
+    }
+
+    override fun onNotificationReceived(notificationData: List<NotificationData>) {
+        notificationsList.clear()
+        for (data in notificationData) {
+            if (!data.isSeen) {
+                notificationsList.add(data)
+            }
+        }
+        binding.notificationCountCardView.isVisible = notificationsList.size != 0
+        binding.notificationCountTextView.text = notificationsList.size.toString()
     }
 
 }

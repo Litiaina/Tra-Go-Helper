@@ -13,9 +13,9 @@ import com.teamlitiaina.tragohelper.adapter.NearestServiceAdapter
 import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.FragmentHomeBinding
-import com.teamlitiaina.tragohelper.firebase.FirebaseObject
+import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
 
-class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, NearestServiceAdapter.DataReceivedListener {
+class HomeFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback, NearestServiceAdapter.DataReceivedListener {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
@@ -98,8 +98,8 @@ class HomeFragment : Fragment(), FirebaseObject.Companion.FirebaseCallback, Near
     }
 
     private fun initializeCallBack() {
-        FirebaseObject.retrieveAllData("vehicleOwner", this)
-        FirebaseObject.retrievedAllLocationData("vehicleOwnerLocation", this)
+        FirebaseBackend.retrieveAllData("vehicleOwner", this)
+        FirebaseBackend.retrievedAllLocationData("vehicleOwnerLocation", this)
     }
 
     override fun onUserDataReceived(data: UserData) {}

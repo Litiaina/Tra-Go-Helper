@@ -6,11 +6,10 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.google.firebase.auth.FirebaseAuth
 import com.teamlitiaina.tragohelper.activity.LoginActivity
 import com.teamlitiaina.tragohelper.activity.MainActivity
 import com.teamlitiaina.tragohelper.databinding.FragmentProfileBinding
-import com.teamlitiaina.tragohelper.firebase.FirebaseObject
+import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
 
 
 class ProfileFragment : Fragment() {
@@ -26,11 +25,13 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.nameTextView.text = MainActivity.currentUser?.name
-        binding.emailTextView.text = MainActivity.currentUser?.email
+        if (MainActivity.currentUser?.name != null && MainActivity.currentUser?.email != null) {
+            binding.nameTextView.text = MainActivity.currentUser?.name
+            binding.emailTextView.text = MainActivity.currentUser?.email
+        }
 
         binding.signOutImageButton.setOnClickListener {
-            FirebaseObject.auth.signOut()
+            FirebaseBackend.auth.signOut()
             with(MainActivity.sharedPreferences.edit()) {
                 putString("auth", "")
                 apply()

@@ -4,7 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="150dp"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_margin="20dp"
+    android:layout_marginTop="10dp"
+    android:layout_marginStart="20dp"
+    android:layout_marginEnd="20dp"
     app:cardCornerRadius="10dp"
     android:background="@drawable/shadow_button_layer_bottom_background"
     app:cardElevation="20dp">
@@ -26,7 +28,7 @@
         android:textStyle="bold" />
 
     <TextView
-        android:id="@+id/notification_detail_text_view"
+        android:id="@+id/notification_information_text_view"
         android:layout_width="match_parent"
         android:layout_height="70dp"
         android:layout_gravity="top|start"

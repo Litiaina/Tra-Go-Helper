@@ -10,7 +10,8 @@ import com.teamlitiaina.tragohelper.activity.MainActivity
 import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ItemLayoutSelectServiceBinding
-import com.teamlitiaina.tragohelper.firebase.FirebaseObject
+import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
+import com.teamlitiaina.tragohelper.firebase.NotificationFirebaseBackend
 
 class NearestServiceAdapter(private val dataArray: List<UserData>, private val activity: Activity) : RecyclerView.Adapter<NearestServiceAdapter.ViewHolder>() {
 
@@ -40,7 +41,7 @@ class NearestServiceAdapter(private val dataArray: List<UserData>, private val a
                 MainActivity.mapFragment?.setDestinationRoute(currentItem.email.toString())
             }
         }
-        FirebaseObject.retrievedAllLocationData("vehicleOwnerLocation", object : FirebaseObject.Companion.FirebaseCallback {
+        FirebaseBackend.retrievedAllLocationData("vehicleOwnerLocation", object : FirebaseBackend.Companion.FirebaseCallback {
             override fun onUserDataReceived(data: UserData) {}
             override fun onLocationDataReceived(data: LocationData) {}
             override fun onAllDataReceived(dataArray: List<UserData>) {}
