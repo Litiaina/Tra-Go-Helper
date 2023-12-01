@@ -5,8 +5,9 @@ import android.annotation.SuppressLint
 import android.content.Context.SENSOR_SERVICE
 import android.content.IntentSender
 import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.drawable.Drawable
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -26,6 +27,10 @@ import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.Granularity
@@ -504,7 +509,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     }
 
     @SuppressLint("PotentialBehaviorOverride")
-     fun addOrUpdateMarkers(userData: List<UserData>, locationData: List<LocationData>) {
+    fun addOrUpdateMarkers(userData: List<UserData>, locationData: List<LocationData>) {
         if (userData.isEmpty() || locationData.isEmpty()) {
             return
         }
@@ -515,14 +520,20 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
 
                 if (existingMarker != null) {
                     existingMarker.position = LatLng(locationData[index].latitude!!.toDouble(), locationData[index].longitude!!.toDouble())
+                    loadCustomImageIntoMarker(existingMarker, userData[index].profilePicture)
                 } else {
-                    val newMarker = mMap?.addMarker(MarkerOptions().position(LatLng(locationData[index].latitude!!.toDouble(), locationData[index].longitude!!.toDouble())).title(name).icon(
-                        BitmapDescriptorFactory.fromBitmap(BitmapFactory.decodeResource(resources, org.osmdroid.library.R.drawable.person))))
+                    val newMarker = mMap?.addMarker(
+                        MarkerOptions()
+                            .position(LatLng(locationData[index].latitude!!.toDouble(), locationData[index].longitude!!.toDouble()))
+                            .title(name)
+                    )
                     newMarker?.let { marker ->
                         emailMarkerMap[locationData[index].email.toString()] = marker
+                        loadCustomImageIntoMarker(marker, userData[index].profilePicture)
                     }
                 }
             }
+
             mMap?.setInfoWindowAdapter(CustomInfoWindowAdapter(requireContext()))
             mMap?.setOnInfoWindowClickListener { clickedMarker ->
                 emailMarkerMap.forEach { (email, marker) ->
@@ -541,6 +552,24 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
                 false
             }
             binding.loadingMarkersLinearLayout.isVisible = false
+        }
+    }
+
+    private fun loadCustomImageIntoMarker(marker: Marker, imageUrl: String?) {
+        if (!imageUrl.isNullOrBlank()) {
+            Glide.with(this)
+                .asBitmap()
+                .load(imageUrl)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(100, 100)
+                .circleCrop()
+                .into(object : CustomTarget<Bitmap>() {
+                    override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
+                        marker.setIcon(BitmapDescriptorFactory.fromBitmap(resource))
+                    }
+
+                    override fun onLoadCleared(placeholder: Drawable?) {}
+                })
         }
     }
 

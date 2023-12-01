@@ -16,6 +16,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TraGoHelper"
         tools:targetApi="31">
+        <activity
+            android:name=".activity.EditInformationActivity"
+            android:exported="false" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
@@ -29,7 +32,7 @@
             android:exported="false" />
         <activity
             android:name=".activity.MainActivity"
-            android:exported="true" >
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

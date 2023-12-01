@@ -82,8 +82,8 @@
                     android:layout_marginTop="90dp"
                     android:layout_marginEnd="20dp"
                     android:layout_marginBottom="20dp"
-                    app:cardCornerRadius="10dp"
                     android:elevation="20dp"
+                    app:cardCornerRadius="10dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
@@ -93,9 +93,9 @@
                         android:id="@+id/switchToRider_switch"
                         android:layout_width="60dp"
                         android:layout_height="60dp"
-                        app:showText="false"
                         android:backgroundTint="@color/white"
-                        android:checked="false" />
+                        android:checked="false"
+                        app:showText="false" />
 
                     <ImageButton
                         android:id="@+id/editProfile_imageButton"
@@ -104,21 +104,21 @@
                         android:layout_gravity="center|top"
                         android:layout_marginStart="42dp"
                         android:layout_marginTop="29dp"
-                        android:src="@drawable/baseline_edit"
-                        android:scaleType="centerCrop"
                         android:background="@android:color/transparent"
-                        android:elevation="100dp"/>
+                        android:elevation="100dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/baseline_edit" />
 
                     <TextView
                         android:id="@+id/name_text_view"
                         android:layout_width="match_parent"
                         android:layout_height="25dp"
-                        android:text="Loading..."
-                        android:textSize="20sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/black"
                         android:layout_marginTop="55dp"
-                        android:gravity="center"/>
+                        android:gravity="center"
+                        android:text="Loading..."
+                        android:textColor="@color/black"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/email_text_view"
@@ -158,18 +158,18 @@
                                     android:layout_height="40dp"
                                     android:layout_gravity="center"
                                     android:layout_marginBottom="15dp"
-                                    android:src="@drawable/baseline_personal_information"
-                                    android:background="@android:color/transparent"/>
+                                    android:background="@android:color/transparent"
+                                    android:src="@drawable/baseline_personal_information" />
 
                                 <TextView
                                     android:layout_width="match_parent"
                                     android:layout_height="42dp"
                                     android:layout_gravity="bottom"
                                     android:gravity="top|center"
-                                    android:textStyle="bold"
-                                    android:textSize="12sp"
+                                    android:text="Personal\nInformation"
                                     android:textColor="@color/black"
-                                    android:text="Personal\nInformation"/>
+                                    android:textSize="12sp"
+                                    android:textStyle="bold" />
 
                             </androidx.cardview.widget.CardView>
 
@@ -189,18 +189,18 @@
                                     android:layout_height="40dp"
                                     android:layout_gravity="center"
                                     android:layout_marginBottom="15dp"
-                                    android:src="@drawable/baseline_notifications"
-                                    android:background="@android:color/transparent"/>
+                                    android:background="@android:color/transparent"
+                                    android:src="@drawable/baseline_notifications" />
 
                                 <TextView
                                     android:layout_width="match_parent"
                                     android:layout_height="33dp"
                                     android:layout_gravity="bottom"
                                     android:gravity="top|center"
-                                    android:textStyle="bold"
-                                    android:textSize="12sp"
+                                    android:text="Notifications"
                                     android:textColor="@color/black"
-                                    android:text="Notifications"/>
+                                    android:textSize="12sp"
+                                    android:textStyle="bold" />
 
                             </androidx.cardview.widget.CardView>
 
@@ -220,18 +220,18 @@
                                     android:layout_height="40dp"
                                     android:layout_gravity="center"
                                     android:layout_marginBottom="15dp"
-                                    android:src="@drawable/baseline_message"
-                                    android:background="@android:color/transparent"/>
+                                    android:background="@android:color/transparent"
+                                    android:src="@drawable/baseline_message" />
 
                                 <TextView
                                     android:layout_width="match_parent"
                                     android:layout_height="33dp"
                                     android:layout_gravity="bottom"
                                     android:gravity="top|center"
-                                    android:textStyle="bold"
-                                    android:textSize="12sp"
+                                    android:text="Message"
                                     android:textColor="@color/black"
-                                    android:text="Message"/>
+                                    android:textSize="12sp"
+                                    android:textStyle="bold" />
 
                             </androidx.cardview.widget.CardView>
 
@@ -259,18 +259,18 @@
                                     android:layout_height="40dp"
                                     android:layout_gravity="center"
                                     android:layout_marginBottom="15dp"
-                                    android:src="@drawable/baseline_order_history"
-                                    android:background="@android:color/transparent"/>
+                                    android:background="@android:color/transparent"
+                                    android:src="@drawable/baseline_order_history" />
 
                                 <TextView
                                     android:layout_width="match_parent"
                                     android:layout_height="33dp"
                                     android:layout_gravity="bottom"
                                     android:gravity="top|center"
-                                    android:textStyle="bold"
-                                    android:textSize="12sp"
+                                    android:text="Payment"
                                     android:textColor="@color/black"
-                                    android:text="Payment"/>
+                                    android:textSize="12sp"
+                                    android:textStyle="bold" />
 
                             </androidx.cardview.widget.CardView>
 
@@ -290,18 +290,18 @@
                                     android:layout_height="40dp"
                                     android:layout_gravity="center"
                                     android:layout_marginBottom="15dp"
-                                    android:src="@drawable/baseline_service_history"
-                                    android:background="@android:color/transparent"/>
+                                    android:background="@android:color/transparent"
+                                    android:src="@drawable/baseline_service_history" />
 
                                 <TextView
                                     android:layout_width="match_parent"
                                     android:layout_height="33dp"
                                     android:layout_gravity="bottom"
                                     android:gravity="top|center"
-                                    android:textStyle="bold"
-                                    android:textSize="12sp"
+                                    android:text="History"
                                     android:textColor="@color/black"
-                                    android:text="History"/>
+                                    android:textSize="12sp"
+                                    android:textStyle="bold" />
 
                             </androidx.cardview.widget.CardView>
 
@@ -321,18 +321,18 @@
                                     android:layout_height="40dp"
                                     android:layout_gravity="center"
                                     android:layout_marginBottom="15dp"
-                                    android:src="@drawable/baseline_ratings_and_reviews"
-                                    android:background="@android:color/transparent"/>
+                                    android:background="@android:color/transparent"
+                                    android:src="@drawable/baseline_ratings_and_reviews" />
 
                                 <TextView
                                     android:layout_width="match_parent"
                                     android:layout_height="33dp"
                                     android:layout_gravity="bottom"
                                     android:gravity="top|center"
-                                    android:textStyle="bold"
-                                    android:textSize="12sp"
+                                    android:text="My Ratings"
                                     android:textColor="@color/black"
-                                    android:text="My Ratings"/>
+                                    android:textSize="12sp"
+                                    android:textStyle="bold" />
 
                             </androidx.cardview.widget.CardView>
 
