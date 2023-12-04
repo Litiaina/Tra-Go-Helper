@@ -15,10 +15,9 @@ import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ItemLayoutSelectServiceBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
-import com.teamlitiaina.tragohelper.firebase.NotificationFirebaseBackend
 import com.teamlitiaina.tragohelper.utility.LocationUtils
 
-class NearestServiceAdapter(private val dataArray: List<UserData>, private val activity: Activity) : RecyclerView.Adapter<NearestServiceAdapter.ViewHolder>() {
+class NonNearestServiceAdapter(private val dataArray: List<UserData>, private val activity: Activity) : RecyclerView.Adapter<NonNearestServiceAdapter.ViewHolder>() {
 
     class ViewHolder(val binding: ItemLayoutSelectServiceBinding) : RecyclerView.ViewHolder(binding.root) {
         var currentData: UserData? = null
@@ -43,13 +42,6 @@ class NearestServiceAdapter(private val dataArray: List<UserData>, private val a
                 .load(currentItem.profilePicture)
                 .apply(RequestOptions.diskCacheStrategyOf(DiskCacheStrategy.ALL))
                 .into(holder.binding.profilePictureCircleImageView)
-        }
-        holder.binding.viewCardView.setOnClickListener {
-            if (MainActivity.currentUser?.email == currentItem.email) {
-                Toast.makeText(activity, "Current User", Toast.LENGTH_SHORT).show()
-            } else {
-                MainActivity.mapFragment?.setDestinationRoute(currentItem.email.toString())
-            }
         }
         holder.binding.viewCardView.setOnClickListener {
             if (MainActivity.currentUser?.email == currentItem.email) {

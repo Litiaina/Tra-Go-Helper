@@ -374,7 +374,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     }
 
     // Use only when trying to get accurate distance in directions
-     fun getDistance(originLatitude: Double, originLongitude: Double, destinationLatitude: Double, destinationLongitude: Double, callback: (String?) -> Unit) {
+     private fun getDistance(originLatitude: Double, originLongitude: Double, destinationLatitude: Double, destinationLongitude: Double, callback: (String?) -> Unit) {
         if (isAdded) {
             try {
                 directionsJob = lifecycleScope.launch(Dispatchers.Main) {
