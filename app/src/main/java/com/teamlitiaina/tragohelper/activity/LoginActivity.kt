@@ -3,11 +3,14 @@ package com.teamlitiaina.tragohelper.activity
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.core.view.WindowCompat
+import com.google.firebase.messaging.FirebaseMessaging
 import com.teamlitiaina.tragohelper.databinding.ActivityLoginBinding
 import com.teamlitiaina.tragohelper.dialog.LoadingDialog
 import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
+import com.teamlitiaina.tragohelper.firebase.FirebaseMessagingServiceBackend
 import com.teamlitiaina.tragohelper.validation.Validation
 
 class LoginActivity : AppCompatActivity() {
@@ -34,7 +37,7 @@ class LoginActivity : AppCompatActivity() {
                         with(MainActivity.sharedPreferences.edit()) {
                             putString("auth", FirebaseBackend.auth.uid)
                             apply()
-                        }
+                    }
                         Toast.makeText(this@LoginActivity, "Login Success", Toast.LENGTH_SHORT).show()
                         startActivity(Intent(this@LoginActivity, MainActivity::class.java))
                         finish()

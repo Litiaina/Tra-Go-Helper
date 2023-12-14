@@ -3,12 +3,15 @@ package com.teamlitiaina.tragohelper.activity
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.core.view.WindowCompat
+import com.google.firebase.messaging.FirebaseMessaging
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityRegisterBinding
 import com.teamlitiaina.tragohelper.dialog.LoadingDialog
 import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
+import com.teamlitiaina.tragohelper.firebase.FirebaseMessagingServiceBackend
 import com.teamlitiaina.tragohelper.validation.Validation
 
 class RegisterActivity : AppCompatActivity() {
@@ -53,7 +56,7 @@ class RegisterActivity : AppCompatActivity() {
                 if (Validation.isInternetAvailable(this@RegisterActivity)) {
                     FirebaseBackend.auth.createUserWithEmailAndPassword(binding.emailEditText.text.toString(), binding.passwordEditText.text.toString()).addOnSuccessListener {
                         FirebaseBackend.database.getReference("vehicleOwner").child(FirebaseBackend.auth.currentUser?.uid.toString()).setValue(
-                            UserData(FirebaseBackend.auth.currentUser?.uid.toString(),binding.nameEditText.text.toString(),binding.emailEditText.text.toString(),binding.phoneNumberEditText.text.toString(),"")
+                            UserData(FirebaseBackend.auth.currentUser?.uid.toString(),binding.nameEditText.text.toString(),binding.emailEditText.text.toString(),binding.phoneNumberEditText.text.toString(),"", "")
                         ).addOnSuccessListener {
                             with(MainActivity.sharedPreferences.edit()) {
                                 putString("auth", FirebaseBackend.auth.uid)

@@ -1,6 +1,7 @@
 package com.teamlitiaina.tragohelper.activity
 
 import android.Manifest
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -8,13 +9,17 @@ import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import com.google.firebase.messaging.FirebaseMessaging
 import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.LOCATION_PERMISSION_REQUEST_CODE
 import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.SETTINGS_REQUEST_CODE
@@ -23,6 +28,7 @@ import com.teamlitiaina.tragohelper.data.NotificationData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityMainBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
+import com.teamlitiaina.tragohelper.firebase.FirebaseMessagingServiceBackend
 import com.teamlitiaina.tragohelper.firebase.NotificationFirebaseBackend
 import com.teamlitiaina.tragohelper.fragment.FragmentChanger
 import com.teamlitiaina.tragohelper.fragment.HomeFragment
@@ -71,6 +77,9 @@ class MainActivity : AppCompatActivity(), FirebaseBackend.Companion.FirebaseCall
         profileFragment = ProfileFragment()
         notificationFragment = NotificationFragment()
         requestPermissions()
+        if (!areNotificationsEnabled()) {
+            showNotificationSettingsDialog()
+        }
 
         FragmentChanger.replaceFragment(this@MainActivity, homeFragment, binding.dashboardLayout.id)
 
@@ -136,6 +145,20 @@ class MainActivity : AppCompatActivity(), FirebaseBackend.Companion.FirebaseCall
         currentUser = data
         FirebaseBackend.retrieveLocationDataByEmailRealTime(currentUser?.email.toString(), this)
         NotificationFirebaseBackend.retrieveNotificationByEmail(currentUser?.email.toString(), this)
+
+        if (FirebaseBackend.auth.currentUser?.uid != null) {
+            FirebaseMessaging.getInstance().token
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        val token = task.result
+                        Log.d("MyFirebaseMessaging", "Manually retrieved token: $token")
+                        FirebaseMessagingServiceBackend.updateTokenInFirebase(token)
+                    } else {
+                        Log.e("MyFirebaseMessaging", "Failed to retrieve token: ${task.exception}")
+                    }
+                }
+        }
+
     }
 
     override fun onLocationDataReceived(data: LocationData) {
@@ -229,6 +252,36 @@ class MainActivity : AppCompatActivity(), FirebaseBackend.Companion.FirebaseCall
         }
         binding.notificationCountCardView.isVisible = notificationsList.size != 0
         binding.notificationCountTextView.text = notificationsList.size.toString()
+    }
+
+    private fun areNotificationsEnabled(): Boolean {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val channelId = "notification_channel"
+        val channel = notificationManager.getNotificationChannel(channelId)
+
+        return NotificationManagerCompat.from(this).areNotificationsEnabled() && (channel == null || channel.importance != NotificationManager.IMPORTANCE_NONE)
+    }
+
+    private fun showNotificationSettingsDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Notification Settings")
+            .setMessage("Notifications are disabled. Do you want to enable them?")
+            .setPositiveButton("Yes") { dialog, _ ->
+                openNotificationSettings()
+                dialog.dismiss()
+            }
+            .setNegativeButton("No") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun openNotificationSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+        val uri = Uri.fromParts("package", packageName, null)
+        intent.data = uri
+        startActivity(intent)
     }
 
 }
