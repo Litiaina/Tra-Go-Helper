@@ -15,6 +15,7 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.data.LocationData
+import com.teamlitiaina.tragohelper.data.ServiceProviderData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityEditInformationBinding
 import com.teamlitiaina.tragohelper.dialog.LoadingDialog
@@ -154,9 +155,9 @@ class EditInformationActivity : AppCompatActivity(), FirebaseBackend.Companion.F
         }
     }
 
+    override fun onAllUserDataReceived(dataArray: List<UserData>) {}
+    override fun onServiceProviderDataReceived(data: ServiceProviderData) {}
     override fun onLocationDataReceived(data: LocationData) {}
-
-    override fun onAllDataReceived(dataArray: List<UserData>) {}
-
+    override fun onAllServiceProviderDataReceived(dataArray: List<ServiceProviderData>) {}
     override fun onAllLocationDataReceived(dataArray: List<LocationData>) {}
 }

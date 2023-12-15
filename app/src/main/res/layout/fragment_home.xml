@@ -188,14 +188,14 @@
                 </androidx.cardview.widget.CardView>
 
                 <androidx.cardview.widget.CardView
-                    android:id="@+id/break_cardView"
+                    android:id="@+id/brake_cardView"
                     android:layout_width="90dp"
                     android:layout_height="match_parent"
                     android:layout_marginEnd="10dp"
                     app:cardCornerRadius="10dp">
 
                     <View
-                        android:id="@+id/break_view"
+                        android:id="@+id/brake_view"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@color/black" />
@@ -212,7 +212,7 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_marginStart="10dp"
-                        android:text="break"
+                        android:text="Brake"
                         android:textAllCaps="true"
                         android:textColor="@color/white"
                         android:textSize="11sp"

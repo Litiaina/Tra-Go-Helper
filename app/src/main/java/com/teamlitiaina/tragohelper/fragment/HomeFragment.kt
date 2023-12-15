@@ -1,17 +1,21 @@
 package com.teamlitiaina.tragohelper.fragment
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.activity.MainActivity
 import com.teamlitiaina.tragohelper.adapter.NearestServiceAdapter
 import com.teamlitiaina.tragohelper.adapter.NonNearestServiceAdapter
+import com.teamlitiaina.tragohelper.constants.Constants
 import com.teamlitiaina.tragohelper.data.LocationData
+import com.teamlitiaina.tragohelper.data.ServiceProviderData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.FragmentHomeBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
@@ -24,9 +28,13 @@ class HomeFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback {
 
     private var nearestServiceAdapter: NearestServiceAdapter? = null
     private var nonNearestServiceAdapter: NonNearestServiceAdapter? = null
-    private var serviceProviderData = mutableListOf<UserData>()
-    private var filteredServiceProviderData = mutableListOf<UserData>()
-    private var filteredAllServiceProviderData = mutableListOf<UserData>()
+    private var serviceType: String? = null
+    private var currentSelectServiceType: String? = null
+    private var serviceProviderData = mutableListOf<ServiceProviderData>()
+    private var filteredServiceProviderData = mutableListOf<ServiceProviderData>()
+    private var filteredServiceProviderLocation = mutableListOf<LocationData>()
+    private var filteredAllServiceProviderData = mutableListOf<ServiceProviderData>()
+    private var filteredAllServiceProviderLocation = mutableListOf<LocationData>()
     private var serviceProviderLocationData = mutableListOf<LocationData>()
     private var beginRealTimeUpdate =  false
 
@@ -64,25 +72,45 @@ class HomeFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback {
         }
 
         binding.clearMapImageButton.setOnClickListener {
+            onServiceSelectView(R.color.black,R.color.black,R.color.black,R.color.black,R.color.black)
             clearData()
+            currentSelectServiceType = null
         }
 
         binding.undeterminedView.setOnClickListener {
-            beginRealTimeUpdate = true
-            binding.noActiveNonNearbyServiceViewRelativeLayout.isVisible = false
-            initializeCallBack()
-            initNearestServiceAdapter()
-            initNonNearestServiceAdapter()
-            MainActivity.mapFragment?.userData = serviceProviderData
-            MainActivity.mapFragment?.locationData = serviceProviderLocationData
-            MainActivity.mapFragment?.addOrUpdateMarkers(serviceProviderData, serviceProviderLocationData)
-            binding.nearbyServicesRecyclerView.adapter = nearestServiceAdapter
-            binding.nonNearbyServicesRecyclerView.adapter = nonNearestServiceAdapter
-            filterNearest()
+            onServiceSelectView(R.color.brown,R.color.black,R.color.black,R.color.black,R.color.black)
+            beginServices("undetermined")
+            currentSelectServiceType = "undetermined"
+        }
+
+        binding.fuelView.setOnClickListener {
+            onServiceSelectView(R.color.black,R.color.brown,R.color.black,R.color.black,R.color.black)
+            beginServices("fuel")
+            currentSelectServiceType = "fuel"
+        }
+
+        binding.tiresView.setOnClickListener {
+            onServiceSelectView(R.color.black,R.color.black,R.color.brown,R.color.black,R.color.black)
+            beginServices("tires")
+            currentSelectServiceType = "tires"
+        }
+
+        binding.batteryView.setOnClickListener {
+            onServiceSelectView(R.color.black,R.color.black,R.color.black,R.color.brown,R.color.black)
+            beginServices("battery")
+            currentSelectServiceType = "battery"
+        }
+
+        binding.brakeView.setOnClickListener {
+            onServiceSelectView(R.color.black,R.color.black,R.color.black,R.color.black,R.color.brown)
+            beginServices("break")
+            currentSelectServiceType = "break"
         }
 
         binding.refreshImageButton.setOnClickListener {
-
+            currentSelectServiceType?.let {
+                beginServices(it)
+            }
         }
     }
 
@@ -92,16 +120,47 @@ class HomeFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback {
         _binding = null
     }
 
+    private fun onServiceSelectView(undetermined: Int, fuel: Int, tires: Int, batter: Int, brake: Int) {
+        binding.undeterminedView.setBackgroundColor(ContextCompat.getColor(requireContext(), undetermined))
+        binding.fuelView.setBackgroundColor(ContextCompat.getColor(requireContext(), fuel))
+        binding.tiresView.setBackgroundColor(ContextCompat.getColor(requireContext(), tires))
+        binding.batteryView.setBackgroundColor(ContextCompat.getColor(requireContext(), batter))
+        binding.brakeView.setBackgroundColor(ContextCompat.getColor(requireContext(), brake))
+    }
+
+    private fun beginServices(serviceTypeSelected: String) {
+        clearData()
+        serviceType = serviceTypeSelected.lowercase()
+        beginRealTimeUpdate = true
+        binding.noActiveNonNearbyServiceViewRelativeLayout.isVisible = false
+        binding.noSelectedServiceViewRelativeLayout.isVisible = false
+        initializeCallBack()
+        initNearestServiceAdapter()
+        initNonNearestServiceAdapter()
+        serviceType?.let {
+            filterNearestAndServiceType(it)
+        }
+        MainActivity.mapFragment?.userData = filteredAllServiceProviderData
+        MainActivity.mapFragment?.locationData = filteredAllServiceProviderLocation
+        MainActivity.mapFragment?.addOrUpdateMarkers(filteredAllServiceProviderData, filteredAllServiceProviderLocation)
+        binding.nearbyServicesRecyclerView.adapter = nearestServiceAdapter
+        binding.nonNearbyServicesRecyclerView.adapter = nonNearestServiceAdapter
+    }
+
     private fun clearData() {
         nearestServiceAdapter = null
         nonNearestServiceAdapter = null
+        serviceType = null
         binding.nearbyServicesRecyclerView.adapter = null
         binding.nonNearbyServicesRecyclerView.adapter = null
         serviceProviderData.clear()
         serviceProviderLocationData.clear()
         filteredServiceProviderData.clear()
+        filteredServiceProviderLocation.clear()
+        filteredAllServiceProviderLocation.clear()
         beginRealTimeUpdate = false
         binding.noActiveNonNearbyServiceViewRelativeLayout.isVisible = true
+        binding.noSelectedServiceViewRelativeLayout.isVisible = true
         MainActivity.mapFragment?.clearMap()
         initializeCallBack()
         initNearestServiceAdapter()
@@ -109,8 +168,8 @@ class HomeFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback {
     }
 
     private fun initializeCallBack() {
-        FirebaseBackend.retrieveAllData("vehicleOwner", this)
-        FirebaseBackend.retrievedAllLocationData("vehicleOwnerLocation", this)
+        FirebaseBackend.retrieveAllServiceProviderData(Constants.SERVICE_PROVIDER_PATH, this)
+        FirebaseBackend.retrievedAllLocationData(Constants.SERVICE_PROVIDER_LOCATION_PATH, this)
     }
 
     private fun initNearestServiceAdapter() {
@@ -119,13 +178,18 @@ class HomeFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback {
     }
 
     private fun initNonNearestServiceAdapter() {
-        nonNearestServiceAdapter = NonNearestServiceAdapter(serviceProviderData, requireActivity())
+        nonNearestServiceAdapter = NonNearestServiceAdapter(filteredAllServiceProviderData, requireActivity())
         binding.nonNearbyServicesRecyclerView.adapter = nonNearestServiceAdapter
     }
 
-    private fun filterNearest() {
+    private fun filterNearestAndServiceType(type: String) {
+        if (filteredAllServiceProviderData.size != 0) {
+            Toast.makeText(requireContext(), "${filteredAllServiceProviderData.size} $type services found", Toast.LENGTH_SHORT).show()
+        }
         filteredServiceProviderData.clear()
         filteredAllServiceProviderData.clear()
+        filteredServiceProviderLocation.clear()
+        filteredAllServiceProviderLocation.clear()
         for(data in serviceProviderData) {
             val currentUser = data.email
             for (location in serviceProviderLocationData) {
@@ -136,15 +200,16 @@ class HomeFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback {
                         location.latitude!!.toDouble(),
                         location.longitude!!.toDouble())
                     { distance ->
-                        if (distance != null) {
-                            if (distance < 4000.0) {
-                                if (!filteredServiceProviderData.contains(data)) {
+                        if (data.type == type) {
+                            if (distance != null && distance < 4000.0) {
+                                if (!filteredServiceProviderData.contains(data) || !filteredServiceProviderLocation.contains(location)) {
                                     filteredServiceProviderData.add(data)
+                                    filteredServiceProviderLocation.add(location)
                                 }
-                            } else {
-                                if (!filteredAllServiceProviderData.contains(data)) {
-                                    filteredAllServiceProviderData.add(data)
-                                }
+                            }
+                            if (!filteredAllServiceProviderData.contains(data) || !filteredAllServiceProviderLocation.contains(location)) {
+                                filteredAllServiceProviderData.add(data)
+                                filteredAllServiceProviderLocation.add(location)
                             }
                         }
                     }
@@ -154,10 +219,10 @@ class HomeFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback {
     }
 
     override fun onUserDataReceived(data: UserData) {}
-
+    override fun onAllUserDataReceived(dataArray: List<UserData>) {}
+    override fun onServiceProviderDataReceived(data: ServiceProviderData) {}
     override fun onLocationDataReceived(data: LocationData) {}
-
-    override fun onAllDataReceived(dataArray: List<UserData>) {
+    override fun onAllServiceProviderDataReceived(dataArray: List<ServiceProviderData>) {
         if (!isAdded) {
             return
         }
@@ -170,9 +235,12 @@ class HomeFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback {
         }
         serviceProviderLocationData = dataArray.toMutableList()
         binding.noSelectedServiceViewRelativeLayout.isVisible = filteredServiceProviderData.size <= 0
+        binding.noActiveNonNearbyServiceViewRelativeLayout.isVisible = filteredAllServiceProviderData.size <= 0
         if (beginRealTimeUpdate) {
-            MainActivity.mapFragment?.addOrUpdateMarkers(serviceProviderData, serviceProviderLocationData)
-            filterNearest()
+            MainActivity.mapFragment?.addOrUpdateMarkers(filteredAllServiceProviderData, filteredAllServiceProviderLocation)
+            serviceType?.let {
+                filterNearestAndServiceType(it)
+            }
             initNearestServiceAdapter()
             initNonNearestServiceAdapter()
         }

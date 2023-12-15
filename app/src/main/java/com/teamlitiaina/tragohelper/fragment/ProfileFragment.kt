@@ -15,7 +15,9 @@ import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.activity.EditInformationActivity
 import com.teamlitiaina.tragohelper.activity.LoginActivity
 import com.teamlitiaina.tragohelper.activity.MainActivity
+import com.teamlitiaina.tragohelper.constants.Constants
 import com.teamlitiaina.tragohelper.data.LocationData
+import com.teamlitiaina.tragohelper.data.ServiceProviderData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.FragmentProfileBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
@@ -35,7 +37,7 @@ class ProfileFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        FirebaseBackend.retrieveData("vehicleOwner", this)
+        FirebaseBackend.retrieveData(Constants.VEHICLE_OWNER_PATH, this)
 
         binding.signOutImageButton.setOnClickListener {
             FirebaseMessagingServiceBackend.updateTokenInFirebase("")
@@ -80,10 +82,10 @@ class ProfileFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback {
         }
     }
 
+    override fun onAllUserDataReceived(dataArray: List<UserData>) {}
+    override fun onServiceProviderDataReceived(data: ServiceProviderData) {}
     override fun onLocationDataReceived(data: LocationData) {}
-
-    override fun onAllDataReceived(dataArray: List<UserData>) {}
-
+    override fun onAllServiceProviderDataReceived(dataArray: List<ServiceProviderData>) {}
     override fun onAllLocationDataReceived(dataArray: List<LocationData>) {}
 
 }

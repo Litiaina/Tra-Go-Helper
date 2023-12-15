@@ -11,16 +11,18 @@ import com.bumptech.glide.request.RequestOptions
 import com.google.android.gms.maps.model.LatLng
 import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.activity.MainActivity
+import com.teamlitiaina.tragohelper.constants.Constants
 import com.teamlitiaina.tragohelper.data.LocationData
+import com.teamlitiaina.tragohelper.data.ServiceProviderData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ItemLayoutSelectServiceBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
 import com.teamlitiaina.tragohelper.utility.LocationUtils
 
-class NearestServiceAdapter(private val dataArray: List<UserData>, private val activity: Activity) : RecyclerView.Adapter<NearestServiceAdapter.ViewHolder>() {
+class NearestServiceAdapter(private val dataArray: List<ServiceProviderData>, private val activity: Activity) : RecyclerView.Adapter<NearestServiceAdapter.ViewHolder>() {
 
     class ViewHolder(val binding: ItemLayoutSelectServiceBinding) : RecyclerView.ViewHolder(binding.root) {
-        var currentData: UserData? = null
+        var currentData: ServiceProviderData? = null
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -57,10 +59,12 @@ class NearestServiceAdapter(private val dataArray: List<UserData>, private val a
                 MainActivity.mapFragment?.setDestinationRoute(currentItem.email.toString())
             }
         }
-        FirebaseBackend.retrievedAllLocationData("vehicleOwnerLocation", object : FirebaseBackend.Companion.FirebaseCallback {
+        FirebaseBackend.retrievedAllLocationData(Constants.SERVICE_PROVIDER_LOCATION_PATH, object : FirebaseBackend.Companion.FirebaseCallback {
             override fun onUserDataReceived(data: UserData) {}
+            override fun onAllUserDataReceived(dataArray: List<UserData>) {}
+            override fun onServiceProviderDataReceived(data: ServiceProviderData) {}
             override fun onLocationDataReceived(data: LocationData) {}
-            override fun onAllDataReceived(dataArray: List<UserData>) {}
+            override fun onAllServiceProviderDataReceived(dataArray: List<ServiceProviderData>) {}
             override fun onAllLocationDataReceived(dataArray: List<LocationData>) {
                 for (data in dataArray) {
                     if (data.email == currentItem.email) {

@@ -12,7 +12,6 @@ import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -25,6 +24,7 @@ import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.LOCATION
 import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.SETTINGS_REQUEST_CODE
 import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.NotificationData
+import com.teamlitiaina.tragohelper.data.ServiceProviderData
 import com.teamlitiaina.tragohelper.data.UserData
 import com.teamlitiaina.tragohelper.databinding.ActivityMainBinding
 import com.teamlitiaina.tragohelper.firebase.FirebaseBackend
@@ -136,14 +136,14 @@ class MainActivity : AppCompatActivity(), FirebaseBackend.Companion.FirebaseCall
         mapFragment = null
     }
 
-    override fun onAllDataReceived(dataArray: List<UserData>) {}
+    override fun onAllServiceProviderDataReceived(dataArray: List<ServiceProviderData>) {}
 
     override fun onAllLocationDataReceived(dataArray: List<LocationData>) {}
 
     override fun onUserDataReceived(data: UserData) {
         binding.currentUserNameTextView.text = data.name
         currentUser = data
-        FirebaseBackend.retrieveLocationDataByEmailRealTime(currentUser?.email.toString(), this)
+        FirebaseBackend.retrieveServiceProviderLocationDataByEmailRealTime(currentUser?.email.toString(), this)
         NotificationFirebaseBackend.retrieveNotificationByEmail(currentUser?.email.toString(), this)
 
         if (FirebaseBackend.auth.currentUser?.uid != null) {
@@ -160,6 +160,9 @@ class MainActivity : AppCompatActivity(), FirebaseBackend.Companion.FirebaseCall
         }
 
     }
+
+    override fun onAllUserDataReceived(dataArray: List<UserData>) {}
+    override fun onServiceProviderDataReceived(data: ServiceProviderData) {}
 
     override fun onLocationDataReceived(data: LocationData) {
         with(sharedPreferences.edit()) {
