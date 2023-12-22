@@ -1,6 +1,7 @@
 package com.teamlitiaina.tragohelper.fragment
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -140,8 +141,8 @@ class HomeFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback {
         serviceType?.let {
             filterNearestAndServiceType(it)
         }
-        MainActivity.mapFragment?.userData = filteredAllServiceProviderData
-        MainActivity.mapFragment?.locationData = filteredAllServiceProviderLocation
+        MainActivity.mapFragment?.filteredServiceProviderData = filteredAllServiceProviderData
+        MainActivity.mapFragment?.filteredServiceProviderLocation = filteredAllServiceProviderLocation
         MainActivity.mapFragment?.addOrUpdateMarkers(filteredAllServiceProviderData, filteredAllServiceProviderLocation)
         binding.nearbyServicesRecyclerView.adapter = nearestServiceAdapter
         binding.nonNearbyServicesRecyclerView.adapter = nonNearestServiceAdapter
@@ -243,6 +244,22 @@ class HomeFragment : Fragment(), FirebaseBackend.Companion.FirebaseCallback {
             }
             initNearestServiceAdapter()
             initNonNearestServiceAdapter()
+            for (data in serviceProviderData) {
+                if (serviceProviderLocationData.none { it.userUID == data.userUID }) {
+                    data.address?.let { address ->
+                        MainActivity.mapFragment?.getLatLngFromAddress(address) { latLng ->
+                            data.userUID?.let { uid ->
+                                FirebaseBackend.database.getReference(Constants.SERVICE_PROVIDER_LOCATION_PATH).child(uid).setValue(
+                                    LocationData(uid, data.email, latLng?.latitude.toString(), latLng?.longitude.toString())
+                                ).addOnFailureListener {
+                                    Log.e("GoogleGeocoderAPI", "${data.email}: Location update failed")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
         }
     }
 }

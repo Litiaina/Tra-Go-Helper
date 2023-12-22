@@ -1,6 +1,7 @@
 package com.teamlitiaina.tragohelper.adapter
 
 import android.app.Activity
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.Toast
@@ -9,8 +10,10 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
 import com.google.android.gms.maps.model.LatLng
+import com.google.gson.Gson
 import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.activity.MainActivity
+import com.teamlitiaina.tragohelper.activity.ServiceProviderDetailsActivity
 import com.teamlitiaina.tragohelper.constants.Constants
 import com.teamlitiaina.tragohelper.data.LocationData
 import com.teamlitiaina.tragohelper.data.ServiceProviderData
@@ -58,6 +61,12 @@ class NearestServiceAdapter(private val dataArray: List<ServiceProviderData>, pr
             } else {
                 MainActivity.mapFragment?.setDestinationRoute(currentItem.email.toString())
             }
+        }
+        holder.binding.parentCardView.setOnClickListener {
+            val intent = Intent(activity, ServiceProviderDetailsActivity::class.java)
+            val serviceProviderDataJson = Gson().toJson(holder.currentData)
+            intent.putExtra("serviceProviderData", serviceProviderDataJson)
+            activity.startActivity(intent)
         }
         FirebaseBackend.retrievedAllLocationData(Constants.SERVICE_PROVIDER_LOCATION_PATH, object : FirebaseBackend.Companion.FirebaseCallback {
             override fun onUserDataReceived(data: UserData) {}

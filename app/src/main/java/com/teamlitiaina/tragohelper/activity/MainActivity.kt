@@ -12,12 +12,14 @@ import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import com.google.firebase.messaging.Constants
 import com.google.firebase.messaging.FirebaseMessaging
 import com.teamlitiaina.tragohelper.R
 import com.teamlitiaina.tragohelper.constants.PermissionCodes.Companion.LOCATION_PERMISSION_REQUEST_CODE
@@ -63,8 +65,8 @@ class MainActivity : AppCompatActivity(), FirebaseBackend.Companion.FirebaseCall
 
         binding.notificationCountCardView.isVisible = false
 
-        FirebaseBackend.retrieveData("vehicleOwner", this)
-        sharedPreferences = getSharedPreferences("currentUserLocation", Context.MODE_PRIVATE)
+        FirebaseBackend.retrieveData(com.teamlitiaina.tragohelper.constants.Constants.VEHICLE_OWNER_PATH, this)
+        sharedPreferences = getSharedPreferences(com.teamlitiaina.tragohelper.constants.Constants.VEHICLE_OWNER_LOCATION_PATH, Context.MODE_PRIVATE)
 
         if (sharedPreferences.getString("auth", "") == "") {
             startActivity(Intent(this, LoginActivity::class.java))

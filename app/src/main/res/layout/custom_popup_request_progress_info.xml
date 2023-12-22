@@ -67,7 +67,7 @@
                 android:layout_height="90dp">
 
                 <androidx.cardview.widget.CardView
-                    android:id="@+id/request_card_view"
+                    android:id="@+id/stages_request_card_view"
                     android:layout_width="45dp"
                     android:layout_height="45dp"
                     android:layout_alignParentStart="true"
@@ -100,10 +100,10 @@
                     android:id="@+id/request_title_text_view"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignTop="@id/request_card_view"
+                    android:layout_alignTop="@id/stages_request_card_view"
                     android:layout_centerInParent="true"
                     android:layout_marginStart="5dp"
-                    android:layout_toEndOf="@id/request_card_view"
+                    android:layout_toEndOf="@id/stages_request_card_view"
                     android:text="Request"
                     android:textColor="@color/black"
                     android:textSize="12sp"
@@ -115,7 +115,7 @@
                     android:layout_below="@id/request_title_text_view"
                     android:layout_centerInParent="true"
                     android:layout_marginStart="6dp"
-                    android:layout_toEndOf="@id/request_card_view"
+                    android:layout_toEndOf="@id/stages_request_card_view"
                     android:text="Your request has been sent to the selected service provider and is currently awaiting approval. Please wait for confirmation from the selected service provider."
                     android:textColor="@color/black"
                     android:textSize="11sp" />
@@ -127,7 +127,7 @@
                 android:layout_height="90dp">
 
                 <androidx.cardview.widget.CardView
-                    android:id="@+id/received_card_view"
+                    android:id="@+id/stages_received_card_view"
                     android:layout_width="45dp"
                     android:layout_height="45dp"
                     android:layout_alignParentStart="true"
@@ -160,10 +160,10 @@
                     android:id="@+id/received_title_text_view"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignTop="@id/received_card_view"
+                    android:layout_alignTop="@id/stages_received_card_view"
                     android:layout_centerInParent="true"
                     android:layout_marginStart="5dp"
-                    android:layout_toEndOf="@id/received_card_view"
+                    android:layout_toEndOf="@id/stages_received_card_view"
                     android:text="Received"
                     android:textColor="@color/black"
                     android:textSize="12sp"
@@ -175,7 +175,7 @@
                     android:layout_below="@id/received_title_text_view"
                     android:layout_centerInParent="true"
                     android:layout_marginStart="6dp"
-                    android:layout_toEndOf="@id/received_card_view"
+                    android:layout_toEndOf="@id/stages_received_card_view"
                     android:text="Your request has been received by the selected service provider. The service provider is currently reviewing the request and may try to get in touch with you, so please stay active."
                     android:textColor="@color/black"
                     android:textSize="11sp" />
@@ -187,7 +187,7 @@
                 android:layout_height="90dp">
 
                 <androidx.cardview.widget.CardView
-                    android:id="@+id/en_route_card_view"
+                    android:id="@+id/stages_en_route_card_view"
                     android:layout_width="45dp"
                     android:layout_height="45dp"
                     android:layout_alignParentStart="true"
@@ -220,10 +220,10 @@
                     android:id="@+id/en_route_title_text_view"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignTop="@id/en_route_card_view"
+                    android:layout_alignTop="@id/stages_en_route_card_view"
                     android:layout_centerInParent="true"
                     android:layout_marginStart="5dp"
-                    android:layout_toEndOf="@id/en_route_card_view"
+                    android:layout_toEndOf="@id/stages_en_route_card_view"
                     android:text="En Route"
                     android:textColor="@color/black"
                     android:textSize="12sp"
@@ -235,7 +235,7 @@
                     android:layout_below="@id/en_route_title_text_view"
                     android:layout_centerInParent="true"
                     android:layout_marginStart="6dp"
-                    android:layout_toEndOf="@id/en_route_card_view"
+                    android:layout_toEndOf="@id/stages_en_route_card_view"
                     android:text="Your request has been approved, and a mechanic has been assigned to inspect your vehicle at your location. You can now track the mechanic's location on your map."
                     android:textColor="@color/black"
                     android:textSize="11sp" />
@@ -247,7 +247,7 @@
                 android:layout_height="90dp">
 
                 <androidx.cardview.widget.CardView
-                    android:id="@+id/repairs_card_view"
+                    android:id="@+id/stages_repairs_card_view"
                     android:layout_width="45dp"
                     android:layout_height="45dp"
                     android:layout_alignParentStart="true"
@@ -280,10 +280,10 @@
                     android:id="@+id/repairs_title_text_view"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignTop="@id/repairs_card_view"
+                    android:layout_alignTop="@id/stages_repairs_card_view"
                     android:layout_centerInParent="true"
                     android:layout_marginStart="5dp"
-                    android:layout_toEndOf="@id/repairs_card_view"
+                    android:layout_toEndOf="@id/stages_repairs_card_view"
                     android:text="Check &amp; Repairs"
                     android:textColor="@color/black"
                     android:textSize="12sp"
@@ -295,7 +295,7 @@
                     android:layout_below="@id/repairs_title_text_view"
                     android:layout_centerInParent="true"
                     android:layout_marginStart="6dp"
-                    android:layout_toEndOf="@id/repairs_card_view"
+                    android:layout_toEndOf="@id/stages_repairs_card_view"
                     android:text="The mechanic has arrived and is now inspecting your vehicle. If you have any questions, please contact the service provider."
                     android:textColor="@color/black"
                     android:textSize="11sp" />
@@ -307,7 +307,7 @@
                 android:layout_height="90dp">
 
                 <androidx.cardview.widget.CardView
-                    android:id="@+id/complete_card_view"
+                    android:id="@+id/stages_complete_card_view"
                     android:layout_width="45dp"
                     android:layout_height="45dp"
                     android:layout_alignParentStart="true"
@@ -340,10 +340,10 @@
                     android:id="@+id/complete_title_text_view"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignTop="@id/complete_card_view"
+                    android:layout_alignTop="@id/stages_complete_card_view"
                     android:layout_centerInParent="true"
                     android:layout_marginStart="5dp"
-                    android:layout_toEndOf="@id/complete_card_view"
+                    android:layout_toEndOf="@id/stages_complete_card_view"
                     android:text="Complete"
                     android:textColor="@color/black"
                     android:textSize="12sp"
@@ -355,7 +355,7 @@
                     android:layout_below="@id/complete_title_text_view"
                     android:layout_centerInParent="true"
                     android:layout_marginStart="6dp"
-                    android:layout_toEndOf="@id/complete_card_view"
+                    android:layout_toEndOf="@id/stages_complete_card_view"
                     android:text="Congratulations! The selected service provider has successfully responded to your request. Payment can be made directly to the assigned mechanic or through the TraGoHelper payment section."
                     android:textColor="@color/black"
                     android:textSize="11sp" />

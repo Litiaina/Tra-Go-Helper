@@ -18,6 +18,15 @@
         android:theme="@style/Theme.TraGoHelper"
         tools:targetApi="31">
         <activity
+            android:name=".activity.MessagingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activity.LandingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".activity.ServiceProviderDetailsActivity"
+            android:exported="false" />
+        <activity
             android:name=".activity.EditInformationActivity"
             android:exported="false" />
 
@@ -41,15 +50,15 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".firebase.FirebaseMessagingServiceBackend"
-            android:permission="com.google.android.c2dm.permission.SEND"
-            android:exported="false">
+        <service
+            android:name=".firebase.FirebaseMessagingServiceBackend"
+            android:exported="false"
+            android:permission="com.google.android.c2dm.permission.SEND">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
             </intent-filter>
-
         </service>
-
     </application>
+
 </manifest>

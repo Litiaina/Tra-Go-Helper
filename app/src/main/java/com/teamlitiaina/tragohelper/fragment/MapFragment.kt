@@ -107,8 +107,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
     private var isFollowingCamera = false
     private var followDirectionCamera = false
     private val emailMarkerMap = mutableMapOf<String, Marker>()
-    var userData = mutableListOf<ServiceProviderData>()
-    var locationData = mutableListOf<LocationData>()
+    var filteredServiceProviderData = mutableListOf<ServiceProviderData>()
+    var filteredServiceProviderLocation = mutableListOf<LocationData>()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMapBinding.inflate(inflater, container, false)
@@ -144,7 +144,6 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
                 .tilt(0f)
                 .build()))
         }
-
     }
 
     private fun createLocationRequest() {
@@ -209,8 +208,8 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         binding.cameraCardView.isVisible = true
         emailMarkerMap.values.forEach { it.remove() }
         emailMarkerMap.clear()
-        userData.clear()
-        locationData.clear()
+        filteredServiceProviderData.clear()
+        filteredServiceProviderLocation.clear()
         cancelDirections()
         mMap?.clear()
     }
@@ -333,7 +332,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
         return polyline1Pairs?.toTypedArray()?.contentDeepEquals(polyline2Pairs?.toTypedArray() ?: emptyArray()) == true
     }
 
-    private fun getLatLngFromAddress(address: String, callback: (LatLng?) -> Unit) {
+    fun getLatLngFromAddress(address: String, callback: (LatLng?) -> Unit) {
         if (!isAdded) {
             callback(null)
             return
@@ -419,7 +418,7 @@ class MapFragment : Fragment(), OnMapReadyCallback, SensorEventListener, Firebas
             }
             updateMapDirections()
             updateMapStyle()
-            addOrUpdateMarkers(userData, locationData)
+            addOrUpdateMarkers(filteredServiceProviderData, filteredServiceProviderLocation)
             FirebaseBackend.database.getReference(Constants.VEHICLE_OWNER_LOCATION_PATH).child(FirebaseBackend.auth.currentUser?.uid.toString()).setValue(
                 LocationData(FirebaseBackend.auth.currentUser?.uid.toString(),MainActivity.currentUser?.email.toString(),currentLocation!!.latitude.toString(), currentLocation!!.longitude.toString())
             ).addOnFailureListener {
